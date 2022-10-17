@@ -96,6 +96,7 @@ impl CypherContext {
         };
         let spot_market_pubkeys = pools
             .iter()
+            .filter(|p| p.state.dex_market != Pubkey::default())
             .map(|p| p.state.dex_market)
             .collect::<Vec<Pubkey>>();
         let spot_markets =

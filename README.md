@@ -47,7 +47,7 @@ The [`cypher-keeper-v3`](https://github.com/chugach-foundation/cypher-keeper-v3)
 
 ### Crank
 
-The [`cypher-crank-v3`](https://github.com/chugach-foundation/cypher-keeper-v3) repository contains the `crank`  functionality for cypher, which can also be used as an example on how to read on-chain data and craft certain transactions that interact with `cypher v3` in order to:
+The [`cypher-crank-v3`](https://github.com/chugach-foundation/cypher-crank-v3) repository contains the `crank`  functionality for cypher, which can also be used as an example on how to read on-chain data and craft certain transactions that interact with `cypher v3` in order to:
 
 - Process events in the Market's Event Queues (current implementation only cranks events for spot markets on devnet)
 

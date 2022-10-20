@@ -12,12 +12,12 @@ use crate::{
         ClosePool, CloseSpotOpenOrders, ConsumeFuturesEvents, ConsumePerpEvents, CreateAccount,
         CreateFuturesMarket, CreateOracleProducts, CreateOrdersAccount, CreatePerpMarket,
         CreatePool, CreatePrivateClearing, CreatePublicClearing, CreateSubAccount, CreateWhitelist,
-        CreateWhitelistedAccount, DepositDeliverable, DepositFunds, InitSpotOpenOrders,
-        NewFuturesOrder, NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry,
-        SetAccountDelegate, SetOracleProducts, SetSubAccountDelegate, SettleFuturesFunds,
-        SettlePerpFunds, SettlePosition, SettlePositionWithDelivery, SettleSpotFunds,
-        SettleSpotFundsDex, TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate,
-        UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
+        CreateWhitelistedAccount, DepositDeliverable, DepositFunds, InitCacheAccount,
+        InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder, NewSpotOrder, NewSpotOrderDex,
+        RollMarketExpiry, SetAccountDelegate, SetOracleProducts, SetSubAccountDelegate,
+        SettleFuturesFunds, SettlePerpFunds, SettlePosition, SettlePositionWithDelivery,
+        SettleSpotFunds, SettleSpotFundsDex, TransferBetweenSubAccounts, UpdateAccountMargin,
+        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
@@ -317,6 +317,25 @@ pub fn create_oracle_products(
     }
 
     let ix_data = crate::instruction::CreateOracleProducts { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts,
+        data: ix_data.data(),
+    }
+}
+
+pub fn init_cache_account(
+    clearing: &Pubkey,
+    cache_account: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = InitCacheAccount {
+        clearing: *clearing,
+        cache_account: *cache_account,
+        authority: *authority,
+    }
+    .to_account_metas(Some(false));
+    let ix_data = crate::instruction::InitCacheAccount {};
     Instruction {
         program_id: crate::id(),
         accounts,

@@ -4,7 +4,7 @@ use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 
 use crate::utils::{
-    get_cypher_program_account, get_multiple_cypher_program_accounts, get_program_accounts,
+    get_cypher_zero_copy_account, get_multiple_cypher_program_accounts, get_program_accounts,
 };
 
 use super::ContextError;
@@ -31,7 +31,7 @@ impl PoolContext {
     /// This function will return an error if something goes wrong during the RPC request
     /// or the Pool's [`Pubkey`] given is not a valid [`Pool`] Account.
     pub async fn load(rpc_client: &Arc<RpcClient>, pool: &Pubkey) -> Result<Self, ContextError> {
-        match get_cypher_program_account::<Pool>(rpc_client, pool).await {
+        match get_cypher_zero_copy_account::<Pool>(rpc_client, pool).await {
             Ok(s) => Ok(Self::new(pool, s.as_ref())),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -93,7 +93,7 @@ impl PoolContext {
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn reload(&mut self, rpc_client: &Arc<RpcClient>) -> Result<(), ContextError> {
-        self.state = match get_cypher_program_account::<Pool>(rpc_client, &self.address).await {
+        self.state = match get_cypher_zero_copy_account::<Pool>(rpc_client, &self.address).await {
             Ok(s) => s.as_ref().clone(),
             Err(e) => {
                 return Err(ContextError::ClientError(e));

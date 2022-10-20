@@ -12,7 +12,7 @@ use std::sync::Arc;
 use crate::{
     accounts_cache::AccountsCache,
     utils::{
-        encode_string, get_cypher_program_account, get_multiple_cypher_program_accounts,
+        encode_string, get_cypher_zero_copy_account, get_multiple_cypher_program_accounts,
         get_program_accounts,
     },
 };
@@ -80,7 +80,7 @@ where
     /// the [`Pubkey`] given is not a valid [`T`] Account or the underlying account does not
     /// have the correct Anchor discriminator for the provided type.
     pub async fn load(rpc_client: &Arc<RpcClient>, market: &Pubkey) -> Result<Self, ContextError> {
-        match get_cypher_program_account::<T>(&rpc_client, market).await {
+        match get_cypher_zero_copy_account::<T>(&rpc_client, market).await {
             Ok(s) => Ok(Self::new(market, s.as_ref())),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -137,7 +137,7 @@ where
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn reload(&mut self, rpc_client: &Arc<RpcClient>) -> Result<(), ContextError> {
-        let state_res = get_cypher_program_account::<T>(&rpc_client, &self.address).await;
+        let state_res = get_cypher_zero_copy_account::<T>(&rpc_client, &self.address).await;
         self.state = match state_res {
             Ok(s) => s.as_ref().clone(),
             Err(e) => {

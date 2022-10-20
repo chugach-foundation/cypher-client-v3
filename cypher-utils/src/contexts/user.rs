@@ -17,7 +17,7 @@ use {
 };
 
 use crate::utils::{
-    create_transaction, encode_string, get_create_account_ix, get_cypher_program_account,
+    create_transaction, encode_string, get_create_account_ix, get_cypher_zero_copy_account,
     get_multiple_cypher_program_accounts, send_transaction, send_transactions,
 };
 
@@ -566,7 +566,7 @@ pub async fn get_cypher_account(
     rpc_client: &RpcClient,
     account: &Pubkey,
 ) -> Result<Box<CypherAccount>, ClientError> {
-    match get_cypher_program_account::<CypherAccount>(rpc_client, account).await {
+    match get_cypher_zero_copy_account::<CypherAccount>(rpc_client, account).await {
         Ok(s) => Ok(s),
         Err(e) => Err(e),
     }
@@ -582,7 +582,7 @@ pub async fn get_cypher_sub_account(
     rpc_client: &RpcClient,
     account: &Pubkey,
 ) -> Result<Box<CypherSubAccount>, ClientError> {
-    match get_cypher_program_account::<CypherSubAccount>(rpc_client, account).await {
+    match get_cypher_zero_copy_account::<CypherSubAccount>(rpc_client, account).await {
         Ok(s) => Ok(s),
         Err(e) => Err(e),
     }

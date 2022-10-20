@@ -1,3 +1,4 @@
+use anchor_client::anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator};
 use log::warn;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
@@ -131,7 +132,33 @@ pub async fn get_program_accounts(
 /// This function will return an error if something goes wrong with the RPC request
 /// or the given account has an invalid Anchor discriminator for the given type.
 #[inline(always)]
-pub async fn get_cypher_program_account<T: ZeroCopy + Owner>(
+pub async fn get_cypher_program_account<
+    T: AccountSerialize + AccountDeserialize + Discriminator + Clone + Owner,
+>(
+    rpc_client: &RpcClient,
+    account: &Pubkey,
+) -> Result<Box<T>, ClientError> {
+    let account_res = rpc_client.get_account_data(account).await;
+    let account_data = match account_res {
+        Ok(a) => a,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    let state = Box::new(<T>::try_deserialize(&mut account_data.as_slice()).unwrap());
+
+    Ok(state)
+}
+
+/// Gets an Account's state and attempts decoding it into the given Account type.
+///
+/// ### Errors
+///
+/// This function will return an error if something goes wrong with the RPC request
+/// or the given account has an invalid Anchor discriminator for the given type.
+#[inline(always)]
+pub async fn get_cypher_zero_copy_account<T: ZeroCopy + Owner>(
     rpc_client: &RpcClient,
     account: &Pubkey,
 ) -> Result<Box<T>, ClientError> {

@@ -8,7 +8,7 @@ use {
     std::cmp::Ordering,
 };
 
-use crate::constants::*;
+use crate::{constants::*, ClearingType};
 
 pub fn fixed_to_ui(number: I80F48, decimals: u8) -> I80F48 {
     number / I80F48::from_num::<u64>(10_u64.checked_pow(decimals as u32).unwrap())
@@ -78,7 +78,7 @@ pub fn derive_public_clearing_address() -> (Pubkey, u8) {
             B_CLEARING,
             ClearingType::Public.try_to_vec().unwrap().as_ref(),
         ],
-        &cypher::id(),
+        &crate::id(),
     );
 
     (address, bump)
@@ -91,7 +91,7 @@ pub fn derive_private_clearing_address(clearing_number: u8) -> (Pubkey, u8) {
             ClearingType::Private.try_to_vec().unwrap().as_ref(),
             clearing_number.to_le_bytes().as_ref(),
         ],
-        &cypher::id(),
+        &crate::id(),
     );
 
     (address, bump)
@@ -99,7 +99,7 @@ pub fn derive_private_clearing_address(clearing_number: u8) -> (Pubkey, u8) {
 
 pub fn derive_oracle_products_address(symbol: &[u8]) -> (Pubkey, u8) {
     let (address, bump) =
-        Pubkey::find_program_address(&[B_ORACLE_PRODUCTS, symbol.as_ref()], &cypher::id());
+        Pubkey::find_program_address(&[B_ORACLE_PRODUCTS, symbol.as_ref()], &crate::id());
 
     (address, bump)
 }

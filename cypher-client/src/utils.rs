@@ -72,11 +72,34 @@ pub fn derive_token_address(wallet_address: &Pubkey, token_mint: &Pubkey) -> Pub
     .0
 }
 
-pub fn derive_clearing_address(account_number: u8) -> (Pubkey, u8) {
+pub fn derive_public_clearing_address() -> (Pubkey, u8) {
     let (address, bump) = Pubkey::find_program_address(
-        &[B_CLEARING, account_number.to_le_bytes().as_ref()],
-        &crate::id(),
+        &[
+            B_CLEARING,
+            ClearingType::Public.try_to_vec().unwrap().as_ref(),
+        ],
+        &cypher::id(),
     );
+
+    (address, bump)
+}
+
+pub fn derive_private_clearing_address(clearing_number: u8) -> (Pubkey, u8) {
+    let (address, bump) = Pubkey::find_program_address(
+        &[
+            B_CLEARING,
+            ClearingType::Private.try_to_vec().unwrap().as_ref(),
+            clearing_number.to_le_bytes().as_ref(),
+        ],
+        &cypher::id(),
+    );
+
+    (address, bump)
+}
+
+pub fn derive_oracle_products_address(symbol: &[u8]) -> (Pubkey, u8) {
+    let (address, bump) =
+        Pubkey::find_program_address(&[B_ORACLE_PRODUCTS, symbol.as_ref()], &cypher::id());
 
     (address, bump)
 }

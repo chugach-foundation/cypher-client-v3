@@ -6,6 +6,7 @@ pub const B_POOL_VAULT: &[u8] = b"CYPHER_POOL_VAULT";
 pub const B_CYPHER_ACCOUNT: &[u8] = b"CYPHER_ACCOUNT";
 pub const B_CYPHER_SUB_ACCOUNT: &[u8] = b"CYPHER_SUB_ACCOUNT";
 pub const B_CYPHER_MARKET: &[u8] = b"CYPHER_MARKET";
+pub const B_ORACLE_PRODUCTS: &[u8] = b"CYPHER_ORACLE_PRODUCTS";
 pub const B_WHITELIST: &[u8] = b"CYPHER_WHITELIST";
 pub const B_ORDERS_ACCOUNT: &[u8] = b"CYPHER_ORDERS_ACCOUNT";
 pub const B_OPEN_ORDERS: &[u8] = b"OPEN_ORDERS";

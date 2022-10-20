@@ -261,6 +261,7 @@ impl UserContext {
         &self,
         rpc_client: &Arc<RpcClient>,
         signer: &Keypair,
+        cache_account: &Pubkey,
         pool: &Pubkey,
         token_mint: &Pubkey,
         amount: u64,
@@ -306,6 +307,7 @@ impl UserContext {
 
         ixs.push(deposit_funds(
             &self.account_ctx.state.clearing,
+            cache_account,
             &self.account_ctx.address,
             &sub_account.address,
             pool,
@@ -364,6 +366,7 @@ impl UserContext {
         &mut self,
         rpc_client: &Arc<RpcClient>,
         signer: &Keypair,
+        cache_account: &Pubkey,
         pool: &Pubkey,
         token_mint: &Pubkey,
         amount: u64,
@@ -409,6 +412,7 @@ impl UserContext {
 
         ixs.push(withdraw_funds(
             &self.account_ctx.state.clearing,
+            cache_account,
             &self.account_ctx.address,
             &sub_account.address,
             pool,

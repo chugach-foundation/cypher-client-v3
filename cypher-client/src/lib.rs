@@ -32,7 +32,9 @@ anchor_gen::generate_cpi_interface!(
         OpenOrder,
         OrdersAccount,
         PriceHistory,
-        CallBackInfo
+        CallBackInfo,
+        CacheAccount,
+        Cache,
     )
 );
 
@@ -102,6 +104,106 @@ impl PartialEq for SubAccountMargining {
             (SubAccountMargining::Cross, SubAccountMargining::Isolated) => true,
             (SubAccountMargining::Isolated, SubAccountMargining::Cross) => true,
             (SubAccountMargining::Isolated, SubAccountMargining::Isolated) => false,
+        }
+    }
+}
+
+impl PartialEq for MarketType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (MarketType::Default, MarketType::Default) => true,
+            (MarketType::Default, MarketType::PairFuture) => false,
+            (MarketType::Default, MarketType::PerpetualFuture) => false,
+            (MarketType::Default, MarketType::PreIDO) => false,
+            (MarketType::Default, MarketType::IndexFuture) => false,
+            (MarketType::PairFuture, MarketType::Default) => false,
+            (MarketType::PairFuture, MarketType::PairFuture) => true,
+            (MarketType::PairFuture, MarketType::PerpetualFuture) => false,
+            (MarketType::PairFuture, MarketType::PreIDO) => false,
+            (MarketType::PairFuture, MarketType::IndexFuture) => false,
+            (MarketType::PerpetualFuture, MarketType::Default) => false,
+            (MarketType::PerpetualFuture, MarketType::PairFuture) => false,
+            (MarketType::PerpetualFuture, MarketType::PerpetualFuture) => true,
+            (MarketType::PerpetualFuture, MarketType::PreIDO) => false,
+            (MarketType::PerpetualFuture, MarketType::IndexFuture) => false,
+            (MarketType::PreIDO, MarketType::Default) => false,
+            (MarketType::PreIDO, MarketType::PairFuture) => false,
+            (MarketType::PreIDO, MarketType::PerpetualFuture) => false,
+            (MarketType::PreIDO, MarketType::PreIDO) => true,
+            (MarketType::PreIDO, MarketType::IndexFuture) => false,
+            (MarketType::IndexFuture, MarketType::Default) => false,
+            (MarketType::IndexFuture, MarketType::PairFuture) => false,
+            (MarketType::IndexFuture, MarketType::PerpetualFuture) => false,
+            (MarketType::IndexFuture, MarketType::PreIDO) => false,
+            (MarketType::IndexFuture, MarketType::IndexFuture) => true,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (MarketType::Default, MarketType::Default) => false,
+            (MarketType::Default, MarketType::PairFuture) => true,
+            (MarketType::Default, MarketType::PerpetualFuture) => true,
+            (MarketType::Default, MarketType::PreIDO) => true,
+            (MarketType::Default, MarketType::IndexFuture) => true,
+            (MarketType::PairFuture, MarketType::Default) => true,
+            (MarketType::PairFuture, MarketType::PairFuture) => false,
+            (MarketType::PairFuture, MarketType::PerpetualFuture) => true,
+            (MarketType::PairFuture, MarketType::PreIDO) => true,
+            (MarketType::PairFuture, MarketType::IndexFuture) => true,
+            (MarketType::PerpetualFuture, MarketType::Default) => true,
+            (MarketType::PerpetualFuture, MarketType::PairFuture) => true,
+            (MarketType::PerpetualFuture, MarketType::PerpetualFuture) => false,
+            (MarketType::PerpetualFuture, MarketType::PreIDO) => true,
+            (MarketType::PerpetualFuture, MarketType::IndexFuture) => true,
+            (MarketType::PreIDO, MarketType::Default) => true,
+            (MarketType::PreIDO, MarketType::PairFuture) => true,
+            (MarketType::PreIDO, MarketType::PerpetualFuture) => true,
+            (MarketType::PreIDO, MarketType::PreIDO) => false,
+            (MarketType::PreIDO, MarketType::IndexFuture) => true,
+            (MarketType::IndexFuture, MarketType::Default) => true,
+            (MarketType::IndexFuture, MarketType::PairFuture) => true,
+            (MarketType::IndexFuture, MarketType::PerpetualFuture) => true,
+            (MarketType::IndexFuture, MarketType::PreIDO) => true,
+            (MarketType::IndexFuture, MarketType::IndexFuture) => false,
+        }
+    }
+}
+
+impl PartialEq for MarginCollateralRatioType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                MarginCollateralRatioType::Initialization,
+                MarginCollateralRatioType::Initialization,
+            ) => true,
+            (MarginCollateralRatioType::Initialization, MarginCollateralRatioType::Maintenance) => {
+                false
+            }
+            (MarginCollateralRatioType::Maintenance, MarginCollateralRatioType::Initialization) => {
+                false
+            }
+            (MarginCollateralRatioType::Maintenance, MarginCollateralRatioType::Maintenance) => {
+                true
+            }
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                MarginCollateralRatioType::Initialization,
+                MarginCollateralRatioType::Initialization,
+            ) => false,
+            (MarginCollateralRatioType::Initialization, MarginCollateralRatioType::Maintenance) => {
+                true
+            }
+            (MarginCollateralRatioType::Maintenance, MarginCollateralRatioType::Initialization) => {
+                true
+            }
+            (MarginCollateralRatioType::Maintenance, MarginCollateralRatioType::Maintenance) => {
+                false
+            }
         }
     }
 }
@@ -182,6 +284,112 @@ impl Clearing {
     }
 }
 
+impl CacheAccount {
+    /// gets a price cache as mutable
+    pub fn get_price_cache(&self, price_cache_idx: usize) -> &Cache {
+        &self.caches[price_cache_idx]
+    }
+}
+
+impl Cache {
+    /// the deposit index of the spot token this cache represents
+    pub fn deposit_index(&self) -> I80F48 {
+        I80F48::from_bits(self.deposit_index)
+    }
+
+    /// the borrow index of the spot token this cache represents
+    pub fn borrow_index(&self) -> I80F48 {
+        I80F48::from_bits(self.borrow_index)
+    }
+
+    // spot
+    /// gets the init asset weight of the spot token
+    pub fn spot_init_asset_weight(&self) -> I80F48 {
+        I80F48::from(self.spot_init_asset_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the maint asset weight of the spot token
+    pub fn spot_maint_asset_weight(&self) -> I80F48 {
+        I80F48::from(self.spot_maint_asset_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the init liab weight of the spot token
+    pub fn spot_init_liab_weight(&self) -> I80F48 {
+        I80F48::from(self.spot_init_liab_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the maint liab weight of the spot token
+    pub fn spot_maint_liab_weight(&self) -> I80F48 {
+        I80F48::from(self.spot_maint_liab_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    // futures
+    /// gets the init asset weight of the futures position
+    pub fn futures_init_asset_weight(&self) -> I80F48 {
+        I80F48::from(self.futures_init_asset_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the maint asset weight of the futures position
+    pub fn futures_maint_asset_weight(&self) -> I80F48 {
+        I80F48::from(self.futures_maint_asset_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the init liab weight of the futures position
+    pub fn futures_init_liab_weight(&self) -> I80F48 {
+        I80F48::from(self.futures_init_liab_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the maint liab weight of the futures position
+    pub fn futures_maint_liab_weight(&self) -> I80F48 {
+        I80F48::from(self.futures_maint_liab_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    // perps
+    /// gets the init asset weight of the perp position
+    pub fn perp_init_asset_weight(&self) -> I80F48 {
+        I80F48::from(self.perp_init_asset_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the maint asset weight of the perp position
+    pub fn perp_maint_asset_weight(&self) -> I80F48 {
+        I80F48::from(self.perp_maint_asset_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the init liab weight of the perp position
+    pub fn perp_init_liab_weight(&self) -> I80F48 {
+        I80F48::from(self.perp_init_liab_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// gets the maint liab weight of the perp position
+    pub fn perp_maint_liab_weight(&self) -> I80F48 {
+        I80F48::from(self.perp_maint_liab_weight)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+}
+
 impl CypherAccount {
     /// gets the c-ratio for this account
     pub fn get_margin_c_ratio(&self) -> I80F48 {
@@ -217,109 +425,224 @@ impl CypherAccount {
 
 impl CypherSubAccount {
     /// gets the c-ratio for this sub account
-    pub fn get_margin_c_ratio(&self) -> I80F48 {
-        let liabs_value = self.get_liabilities_value();
+    pub fn get_margin_c_ratio(
+        &self,
+        cache_account: &CacheAccount,
+        mcr_type: MarginCollateralRatioType,
+    ) -> I80F48 {
+        let liabs_value = self.get_liabilities_value(cache_account, mcr_type);
         if liabs_value == I80F48::ZERO {
             I80F48::MAX
         } else {
-            let assets_value = self.get_assets_value();
-            assets_value / liabs_value
+            let assets_value = self.get_assets_value(cache_account, mcr_type);
+            assets_value.saturating_div(liabs_value)
         }
     }
 
     /// gets the assets value, liabilities value and c-ratio respectively
-    pub fn get_margin_c_ratio_components(&self) -> (I80F48, I80F48, I80F48) {
-        let liabilities_value = self.get_liabilities_value();
-        let assets_value = self.get_assets_value();
+    pub fn get_margin_c_ratio_components(
+        &self,
+        cache_account: &CacheAccount,
+        mcr_type: MarginCollateralRatioType,
+    ) -> (I80F48, I80F48, I80F48) {
+        let liabilities_value = self.get_liabilities_value(cache_account, mcr_type);
+        let assets_value = self.get_assets_value(cache_account, mcr_type);
 
         if liabilities_value == I80F48::ZERO {
-            (assets_value, I80F48::ZERO, I80F48::MAX)
+            (I80F48::MAX, assets_value, I80F48::ZERO)
         } else {
             (
+                assets_value.saturating_div(liabilities_value),
                 assets_value,
                 liabilities_value,
-                assets_value / liabilities_value,
             )
         }
     }
 
     /// gets the assets value of this sub account
-    pub fn get_assets_value(&self) -> I80F48 {
-        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot.total_position();
-        let mut assets_value = if quote_position.is_positive() {
-            quote_position
+    pub fn get_assets_value(
+        &self,
+        cache_account: &CacheAccount,
+        mcr_type: MarginCollateralRatioType,
+    ) -> I80F48 {
+        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
+        let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
+        let quote_position_size = quote_position.total_position(quote_cache);
+        let mut assets_value = if quote_position_size.is_positive() {
+            quote_position_size
         } else {
             I80F48::ZERO
         };
 
         for position in self.positions.iter() {
             // spot
-            let spot_oracle_price = I80F48::from(position.spot.oracle_price);
-            let spot_asset_weight = position.spot.asset_weight();
-            let spot_position = position.spot.total_position();
-            if spot_position.is_positive() {
-                let spot_position_size = spot_position
-                    .checked_add(I80F48::from(position.spot.open_orders_cache.coin_total))
-                    .unwrap();
-                assets_value += spot_position_size
-                    .checked_mul(spot_oracle_price)
-                    .and_then(|n| n.checked_mul(spot_asset_weight))
-                    .unwrap();
+            if position.spot.token_mint != Pubkey::default() {
+                // get the relevant price cache
+                let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
+                // convert oracle price to fixed type
+                let spot_oracle_price = I80F48::from(cache.oracle_price);
+                // get asset weight according to margin collateral ratio type
+                let spot_asset_weight = match mcr_type {
+                    MarginCollateralRatioType::Initialization => cache.spot_init_asset_weight(),
+                    MarginCollateralRatioType::Maintenance => cache.spot_maint_asset_weight(),
+                };
+                let spot_position = position.spot.total_position(cache);
+                if spot_position.is_positive() {
+                    let spot_position_size = spot_position
+                        .checked_add(I80F48::from(position.spot.open_orders_cache.coin_total))
+                        .unwrap();
+                    assets_value += spot_position_size
+                        .checked_mul(spot_oracle_price)
+                        .and_then(|n| n.checked_mul(spot_asset_weight))
+                        .unwrap();
+                }
+                assets_value += I80F48::from(position.spot.open_orders_cache.pc_total);
             }
-            assets_value += I80F48::from(position.spot.open_orders_cache.pc_total);
 
             // derivatives
-            let derivative_price = I80F48::from(position.derivative.price);
-            let derivative_asset_weight = position.derivative.asset_weight();
-            let derivative_position = position.derivative.base_position();
-            if derivative_position.is_positive() {
-                let derivative_position_size = derivative_position
-                    .checked_add(I80F48::from(
-                        position.derivative.open_orders_cache.coin_total,
-                    ))
-                    .unwrap();
-                assets_value += derivative_position_size
-                    .checked_mul(derivative_price)
-                    .and_then(|n| n.checked_mul(derivative_asset_weight))
-                    .unwrap();
+            if position.derivative.market != Pubkey::default() {
+                // get the relevant price cache
+                let cache = cache_account.get_price_cache(position.derivative.cache_index as usize);
+                // convert the orresponding price to fixed type
+                let derivative_price =
+                    if position.derivative.market_type == MarketType::PerpetualFuture {
+                        I80F48::from(cache.oracle_price)
+                    } else {
+                        I80F48::from(cache.market_price)
+                    };
+                // get asset weight according to margin collateral ratio type
+                let derivative_asset_weight = match (mcr_type, position.derivative.market_type) {
+                    (MarginCollateralRatioType::Initialization, MarketType::PairFuture) => {
+                        cache.futures_init_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Initialization, MarketType::PerpetualFuture) => {
+                        cache.perp_init_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Initialization, MarketType::PreIDO) => {
+                        cache.futures_init_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Initialization, MarketType::IndexFuture) => {
+                        cache.futures_init_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::PairFuture) => {
+                        cache.futures_maint_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::PerpetualFuture) => {
+                        cache.perp_maint_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::PreIDO) => {
+                        cache.futures_maint_asset_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::IndexFuture) => {
+                        cache.futures_maint_asset_weight()
+                    }
+                    _ => unreachable!(),
+                };
+                let derivative_position = position.derivative.base_position();
+                if derivative_position.is_positive() {
+                    let derivative_position_size = derivative_position
+                        .checked_add(I80F48::from(
+                            position.derivative.open_orders_cache.coin_total,
+                        ))
+                        .unwrap();
+                    assets_value += derivative_position_size
+                        .checked_mul(derivative_price)
+                        .and_then(|n| n.checked_mul(derivative_asset_weight))
+                        .unwrap();
+                }
+                assets_value += I80F48::from(position.derivative.open_orders_cache.pc_total);
             }
-            assets_value += I80F48::from(position.derivative.open_orders_cache.pc_total);
         }
 
         assets_value
     }
 
     /// gets the liabilities value of this sub account
-    pub fn get_liabilities_value(&self) -> I80F48 {
-        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot.total_position();
-        let mut liabilities_value = if quote_position.is_negative() {
-            quote_position
+    pub fn get_liabilities_value(
+        &self,
+        cache_account: &CacheAccount,
+        mcr_type: MarginCollateralRatioType,
+    ) -> I80F48 {
+        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
+        let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
+        let quote_position_size = quote_position.total_position(quote_cache);
+        let mut liabilities_value = if quote_position_size.is_negative() {
+            quote_position_size.abs()
         } else {
             I80F48::ZERO
         };
 
         for position in self.positions.iter() {
             // spot
-            let spot_oracle_price = I80F48::from(position.spot.oracle_price);
-            let spot_liability_weight = position.spot.liability_weight();
-            let spot_position = position.spot.total_position();
-            if spot_position.is_negative() {
-                liabilities_value += spot_position
-                    .abs()
-                    .checked_mul(spot_oracle_price)
-                    .and_then(|n| n.checked_mul(spot_liability_weight))
-                    .unwrap();
+            if position.spot.token_mint != Pubkey::default() {
+                // get the relevant price cache
+                let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
+                // convert oracle price to fixed type
+                let spot_oracle_price = I80F48::from(cache.oracle_price);
+                // get liability weight according to margin collateral ratio type
+                let spot_liability_weight = match mcr_type {
+                    MarginCollateralRatioType::Initialization => cache.spot_init_liab_weight(),
+                    MarginCollateralRatioType::Maintenance => cache.spot_maint_liab_weight(),
+                };
+                // get total spot position value according to index
+                let spot_position = position.spot.total_position(cache);
+                if spot_position.is_negative() {
+                    liabilities_value += spot_position
+                        .abs()
+                        .checked_mul(spot_oracle_price)
+                        .and_then(|n| n.checked_mul(spot_liability_weight))
+                        .unwrap();
+                }
             }
             // derivatives
-            let derivative_price = I80F48::from(position.derivative.price);
-            let derivative_liability_weight = position.derivative.liability_weight();
-            let derivative_position = position.derivative.base_position();
-            if derivative_position.is_negative() {
-                liabilities_value += derivative_position
-                    .abs()
-                    .checked_mul(derivative_price)
-                    .and_then(|n| n.checked_mul(derivative_liability_weight))
-                    .unwrap();
+            if position.derivative.market != Pubkey::default() {
+                // get the relevant price cache
+                let cache = cache_account.get_price_cache(position.derivative.cache_index as usize);
+                // convert the orresponding price to fixed type
+                let derivative_price =
+                    if position.derivative.market_type == MarketType::PerpetualFuture {
+                        I80F48::from(cache.oracle_price)
+                    } else {
+                        I80F48::from(cache.market_price)
+                    };
+
+                // get liability weight according to margin collateral ratio type
+                let derivative_liability_weight = match (mcr_type, position.derivative.market_type)
+                {
+                    (MarginCollateralRatioType::Initialization, MarketType::PairFuture) => {
+                        cache.futures_init_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Initialization, MarketType::PerpetualFuture) => {
+                        cache.perp_init_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Initialization, MarketType::PreIDO) => {
+                        cache.futures_init_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Initialization, MarketType::IndexFuture) => {
+                        cache.futures_init_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::PairFuture) => {
+                        cache.futures_maint_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::PerpetualFuture) => {
+                        cache.perp_maint_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::PreIDO) => {
+                        cache.futures_maint_liab_weight()
+                    }
+                    (MarginCollateralRatioType::Maintenance, MarketType::IndexFuture) => {
+                        cache.futures_maint_liab_weight()
+                    }
+                    _ => unreachable!(),
+                };
+                let derivative_position = position.derivative.base_position();
+                if derivative_position.is_negative() {
+                    liabilities_value += derivative_position
+                        .abs()
+                        .checked_mul(derivative_price)
+                        .and_then(|n| n.checked_mul(derivative_liability_weight))
+                        .unwrap();
+                }
             }
         }
 
@@ -353,37 +676,13 @@ impl SpotPosition {
         I80F48::from_bits(self.position)
     }
 
-    /// gets the position's weight as an asset
-    pub fn asset_weight(&self) -> I80F48 {
-        I80F48::from(self.asset_weight)
-            .checked_mul(INV_ONE_HUNDRED_FIXED)
-            .unwrap()
-    }
-
-    /// gets the position's weight as a liability
-    pub fn liability_weight(&self) -> I80F48 {
-        I80F48::from(self.liability_weight)
-            .checked_mul(INV_ONE_HUNDRED_FIXED)
-            .unwrap()
-    }
-
-    pub fn total_position(&self) -> I80F48 {
+    pub fn total_position(&self, cache: &Cache) -> I80F48 {
         let position = self.position();
         if position.is_positive() {
-            position * self.deposit_index()
+            position * cache.deposit_index()
         } else {
-            position * self.borrow_index()
+            position * cache.borrow_index()
         }
-    }
-
-    /// the deposit index of the underlying token
-    pub fn deposit_index(&self) -> I80F48 {
-        I80F48::from_bits(self.deposit_index)
-    }
-
-    /// the borrow index of the underlying token
-    pub fn borrow_index(&self) -> I80F48 {
-        I80F48::from_bits(self.borrow_index)
     }
 }
 
@@ -391,20 +690,6 @@ impl DerivativePosition {
     /// the deposits of this position
     pub fn base_position(&self) -> I80F48 {
         I80F48::from_bits(self.base_position)
-    }
-
-    /// gets the position's weight as an asset
-    pub fn asset_weight(&self) -> I80F48 {
-        I80F48::from(self.asset_weight)
-            .checked_mul(INV_ONE_HUNDRED_FIXED)
-            .unwrap()
-    }
-
-    /// gets the position's weight as a liability
-    pub fn liability_weight(&self) -> I80F48 {
-        I80F48::from(self.liability_weight)
-            .checked_mul(INV_ONE_HUNDRED_FIXED)
-            .unwrap()
     }
 }
 

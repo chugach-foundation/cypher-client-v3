@@ -101,6 +101,27 @@
       "args": []
     },
     {
+      "name": "closeCacheAccount",
+      "accounts": [
+        {
+          "name": "cacheAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rentDestination",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closeClearing",
       "accounts": [
         {
@@ -167,6 +188,32 @@
         {
           "name": "authority",
           "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeOracleProducts",
+      "accounts": [
+        {
+          "name": "cacheAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "oracleProducts",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rentDestination",
+          "isMut": true,
           "isSigner": true
         }
       ],
@@ -6609,196 +6656,221 @@
     },
     {
       "code": 6027,
+      "name": "InvalidCacheAccount",
+      "msg": "the provided cache account is invalid"
+    },
+    {
+      "code": 6028,
       "name": "OrderNotFound",
       "msg": "the provided order id could not be found"
     },
     {
-      "code": 6028,
+      "code": 6029,
       "name": "InvalidOrderSide",
       "msg": "the provided order side is invalid"
     },
     {
-      "code": 6029,
+      "code": 6030,
       "name": "CacheAccountFull",
       "msg": "the cache account is full"
     },
     {
-      "code": 6030,
+      "code": 6031,
+      "name": "CacheAccountWithOracleProducts",
+      "msg": "the cache account has initialized oracle products"
+    },
+    {
+      "code": 6032,
+      "name": "OracleProductsWithTokenMint",
+      "msg": "the oracle products account has an initialized token mint"
+    },
+    {
+      "code": 6033,
+      "name": "OracleProductsWithFuturesMarket",
+      "msg": "the oracle products account has an initialized futuresmarket"
+    },
+    {
+      "code": 6034,
+      "name": "OracleProductsWithPerpetualMarket",
+      "msg": "the oracle products account has an initialized perp market"
+    },
+    {
+      "code": 6035,
       "name": "FuturesOrdersAccountFull",
       "msg": "the futures orders account is full"
     },
     {
-      "code": 6031,
+      "code": 6036,
       "name": "FuturesOrdersAccountMustBeEmpty",
       "msg": "attempted to close a futures orders account with remaining orders"
     },
     {
-      "code": 6032,
+      "code": 6037,
       "name": "PoolDexMarketAlreadyInitialized",
       "msg": "the provided pool already has an initialized dex market"
     },
     {
-      "code": 6033,
+      "code": 6038,
       "name": "OracleProductsAlreadyInitialized",
       "msg": "the given oracle products account has already been initialized"
     },
     {
-      "code": 6034,
+      "code": 6039,
       "name": "StaleAccountCache",
       "msg": "the given account has stale cached positions"
     },
     {
-      "code": 6035,
+      "code": 6040,
       "name": "StaleOracleCache",
       "msg": "the given oracle products account has a stale cache"
     },
     {
-      "code": 6036,
+      "code": 6041,
       "name": "PrivateClearing",
       "msg": "attempted to create account in a private clearing"
     },
     {
-      "code": 6037,
+      "code": 6042,
       "name": "PublicClearing",
       "msg": "attempted to create whitelisted account in a public clearing"
     },
     {
-      "code": 6038,
+      "code": 6043,
       "name": "MarketInactive",
       "msg": "provided market is inactive"
     },
     {
-      "code": 6039,
+      "code": 6044,
       "name": "MarketAlreadyActive",
       "msg": "provided market is already active"
     },
     {
-      "code": 6040,
+      "code": 6045,
       "name": "MarketWithOpenInterestCannotBeclosed",
       "msg": "perpetual market with exisitng open interest cannot be closed"
     },
     {
-      "code": 6041,
+      "code": 6046,
       "name": "ActiveMarketCannotSettlePosition",
       "msg": "active market cannot settle position"
     },
     {
-      "code": 6042,
+      "code": 6047,
       "name": "ActiveMarketCannotSweepFees",
       "msg": "active market cannot sweep fees"
     },
     {
-      "code": 6043,
+      "code": 6048,
       "name": "ActiveMarketCannotClaimIdoProceeds",
       "msg": "active market cannot claim IDO proceeds"
     },
     {
-      "code": 6044,
+      "code": 6049,
       "name": "ActiveMarketCannotBeClosed",
       "msg": "active market cannot be closed"
     },
     {
-      "code": 6045,
+      "code": 6050,
       "name": "ActivePoolCannotBeClosed",
       "msg": "active pool cannot be closed"
     },
     {
-      "code": 6046,
+      "code": 6051,
       "name": "MarketNotForPhysicalDelivery",
       "msg": "provided market was not created for physical delivery"
     },
     {
-      "code": 6047,
+      "code": 6052,
       "name": "SubAccountAliasTooLong",
       "msg": "the provided sub account alias is too long"
     },
     {
-      "code": 6048,
+      "code": 6053,
       "name": "UnableToFindPosition",
       "msg": "unable to find position"
     },
     {
-      "code": 6049,
+      "code": 6054,
       "name": "UnableToFindOrderByOrderId",
       "msg": "unable to find order with given order id"
     },
     {
-      "code": 6050,
+      "code": 6055,
       "name": "UnableToFindOrderByClientId",
       "msg": "unable to find order with given client order id"
     },
     {
-      "code": 6051,
+      "code": 6056,
       "name": "UnableToPostOrder",
       "msg": "unable to post order"
     },
     {
-      "code": 6052,
+      "code": 6057,
       "name": "SpotOpenOrdersHasUnsettledFunds",
       "msg": "the provided spot open orders account has unsettled funds"
     },
     {
-      "code": 6053,
+      "code": 6058,
       "name": "RemainingAccountNotWritable",
       "msg": "specified sub account is not writable"
     },
     {
-      "code": 6054,
+      "code": 6059,
       "name": "RemainingAccountWithInvalidOwner",
       "msg": "specified sub account is not writable"
     },
     {
-      "code": 6055,
+      "code": 6060,
       "name": "RemainingAccountWithInvalidAuthority",
       "msg": "specified sub account is not owned by the same authority"
     },
     {
-      "code": 6056,
+      "code": 6061,
       "name": "RemainingAccountWithInvalidMasterAccount",
       "msg": "specified sub account does not belong to the specified master account"
     },
     {
-      "code": 6057,
+      "code": 6062,
       "name": "RemainingUserAccountMissing",
       "msg": "remaining user account missing"
     },
     {
-      "code": 6058,
+      "code": 6063,
       "name": "RemainingAccountsMissing",
       "msg": "there are remaining accounts missing from the instruction"
     },
     {
-      "code": 6059,
+      "code": 6064,
       "name": "SubAccountCRatioBelowOptimal",
       "msg": "sub account c-ratio is below optimal"
     },
     {
-      "code": 6060,
+      "code": 6065,
       "name": "MasterAccountCRatioBelowOptimal",
       "msg": "master account c-ratio is below optimal"
     },
     {
-      "code": 6061,
+      "code": 6066,
       "name": "TotalBorrowsGreaterThanDeposits",
       "msg": "pool total borrows amount are greater than total deposits"
     },
     {
-      "code": 6062,
+      "code": 6067,
       "name": "MarketTotalBorrowsGreaterThanTokenSupply",
       "msg": "market total borrows amount are greater than total token supply"
     },
     {
-      "code": 6063,
+      "code": 6068,
       "name": "OrderAmountExceedsVaultBalance",
       "msg": "attempted to submit an order with greater amount than is available in the vault"
     },
     {
-      "code": 6064,
+      "code": 6069,
       "name": "TransactionAborted",
       "msg": "the transaction has been aborted due to predetermined functionality"
     },
     {
-      "code": 6065,
+      "code": 6070,
       "name": "Default",
       "msg": "Default"
     }

@@ -8,17 +8,17 @@ use anchor_spl::token;
 use crate::{
     accounts::{
         CacheOraclePrices, CancelFuturesOrder, CancelPerpOrder, CancelSpotOrder,
-        CancelSpotOrderDex, ClaimIdoProceeds, CloseCacheAccount, CloseClearing, CloseFuturesMarket,
-        CloseOracleProducts, ClosePerpMarket, ClosePool, CloseSpotOpenOrders, ConsumeFuturesEvents,
-        ConsumePerpEvents, CreateAccount, CreateFuturesMarket, CreateOracleProducts,
-        CreateOrdersAccount, CreatePerpMarket, CreatePool, CreatePrivateClearing,
-        CreatePublicClearing, CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount,
-        DepositDeliverable, DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder,
-        NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
-        SetOracleProducts, SetSubAccountDelegate, SettleFuturesFunds, SettlePerpFunds,
-        SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
-        TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
-        UpdateTokenIndex, WithdrawFunds,
+        CancelSpotOrderDex, ClaimIdoProceeds, CloseAccount, CloseCacheAccount, CloseClearing,
+        CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket, ClosePool, CloseSpotOpenOrders,
+        CloseSubAccount, ConsumeFuturesEvents, ConsumePerpEvents, CreateAccount,
+        CreateFuturesMarket, CreateOracleProducts, CreateOrdersAccount, CreatePerpMarket,
+        CreatePool, CreatePrivateClearing, CreatePublicClearing, CreateSubAccount, CreateWhitelist,
+        CreateWhitelistedAccount, DepositDeliverable, DepositFunds, InitCacheAccount,
+        InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder, NewSpotOrder, NewSpotOrderDex,
+        RollMarketExpiry, SetAccountDelegate, SetOracleProducts, SetSubAccountDelegate,
+        SettleFuturesFunds, SettlePerpFunds, SettlePosition, SettlePositionWithDelivery,
+        SettleSpotFunds, SettleSpotFundsDex, TransferBetweenSubAccounts, UpdateAccountMargin,
+        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
@@ -1374,6 +1374,44 @@ pub fn close_oracle_products(
         rent_destination: *rent_destination,
     };
     let ix_data = crate::instruction::CloseOracleProducts {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn close_account(
+    account: &Pubkey,
+    authority: &Pubkey,
+    rent_destination: &Pubkey,
+) -> Instruction {
+    let accounts = CloseAccount {
+        account: *account,
+        authority: *authority,
+        rent_destination: *rent_destination,
+    };
+    let ix_data = crate::instruction::CloseAccount {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn close_sub_account(
+    account: &Pubkey,
+    sub_account: &Pubkey,
+    authority: &Pubkey,
+    rent_destination: &Pubkey,
+) -> Instruction {
+    let accounts = CloseSubAccount {
+        account: *account,
+        sub_account: *sub_account,
+        authority: *authority,
+        rent_destination: *rent_destination,
+    };
+    let ix_data = crate::instruction::CloseSubAccount {};
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

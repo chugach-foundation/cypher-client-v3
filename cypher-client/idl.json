@@ -101,6 +101,27 @@
       "args": []
     },
     {
+      "name": "closeAccount",
+      "accounts": [
+        {
+          "name": "account",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rentDestination",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closeCacheAccount",
       "accounts": [
         {
@@ -328,6 +349,32 @@
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeSubAccount",
+      "accounts": [
+        {
+          "name": "account",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "subAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rentDestination",
+          "isMut": true,
+          "isSigner": true
         }
       ],
       "args": []
@@ -6871,6 +6918,16 @@
     },
     {
       "code": 6070,
+      "name": "AccountWithSubAccounts",
+      "msg": "the provided account has initialized sub accounts"
+    },
+    {
+      "code": 6071,
+      "name": "SubAccountWithPositions",
+      "msg": "the provided sub account has existing position"
+    },
+    {
+      "code": 6072,
       "name": "Default",
       "msg": "Default"
     }

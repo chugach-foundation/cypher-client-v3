@@ -7,10 +7,15 @@ license = "Apache-2.0"
 name = "cypher-utils"
 version = "0.1.0"
 
+[features]
+default = [ "devnet" ]
+devnet = [ "anchor-spl/devnet" ]
+mainnet-beta = []
+
 [dependencies]
 agnostic-orderbook = { git = "https://github.com/chugach-foundation/agnostic-orderbook.git" }
 anchor-client = "0.25.0"
-anchor-spl = { version = "0.25.0", features = [ "token", "associated_token", "dex", "devnet" ]}
+anchor-spl = { version = "0.25.0", features = [ "token", "associated_token", "dex" ]}
 arrayref = "0.3.6"
 base64 = "0.13.0"
 bytemuck = "1.4.0"

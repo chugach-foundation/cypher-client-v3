@@ -8,11 +8,12 @@ name = "faucet-client"
 version = "0.1.0"
 
 [features]
-cpi = ["no-entrypoint"]
-default = ["cpi"]
+cpi = [ "no-entrypoint" ]
+default = [ "cpi", "devnet" ]
+devnet = [ "anchor-spl/devnet" ]
 no-entrypoint = []
 no-idl = []
-mainnet-beta = []
+mainnet-beta = [ "cpi" ]
 
 [dependencies]
 anchor-gen = "0.3.0"

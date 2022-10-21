@@ -83,6 +83,12 @@ pub mod dex {
     declare_id!("DESVgJVGajEgKGXhb6XmqDHGz3VjdgP7rEVESBgxmroY");
 }
 
+pub mod cache_account {
+    use anchor_lang::declare_id;
+    #[cfg(not(feature = "mainnet-beta"))]
+    declare_id!("146KULKKVzc7EXVhv7J5fshHSroTADCCnYRFQtSfHGi7");
+}
+
 pub mod wrapped_sol {
     use anchor_lang::declare_id;
     declare_id!("So11111111111111111111111111111111111111112");

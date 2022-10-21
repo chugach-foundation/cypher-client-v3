@@ -25,6 +25,18 @@ cypher-utils = { git = "https://github.com/chugach-foundation/cypher-client-v3" 
 faucet-client = { git = "https://github.com/chugach-foundation/cypher-client-v3" }
 ```
 
+By default, all crates enable the `devnet` feature, in order to use them on `mainnet-beta`, that flag should be enabled:
+
+```toml
+[package]
+name = "your-app"
+
+[dependencies]
+cypher-client = { git = "https://github.com/chugach-foundation/cypher-client-v3", features = [ "mainnet-beta" ] }
+cypher-utils = { git = "https://github.com/chugach-foundation/cypher-client-v3", features = [ "mainnet-beta" ] }
+faucet-client = { git = "https://github.com/chugach-foundation/cypher-client-v3", features = [ "mainnet-beta" ] }
+```
+
 ### ⚠️⚠️ Compilation issues for M1 chips ⚠️⚠️
 
 In order to prevent issues when compiling due to the `agnostic-orderbook`.

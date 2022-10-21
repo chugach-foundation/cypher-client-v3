@@ -134,7 +134,7 @@ impl UserContext {
             ),
         ];
 
-        let sig = send_transactions(&rpc_client, ixs, authority, true).await;
+        let _ = send_transactions(&rpc_client, ixs, authority, true).await;
 
         UserContext::load(rpc_client, &authority.pubkey(), Some(account_number)).await
     }
@@ -241,7 +241,7 @@ impl UserContext {
             sub_accounts_alias,
         )];
 
-        let sig = send_transactions(&rpc_client, ixs, signer, true).await;
+        let _ = send_transactions(&rpc_client, ixs, signer, true).await;
 
         self.reload(rpc_client).await
     }

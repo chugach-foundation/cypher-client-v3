@@ -1,6 +1,6 @@
-pub mod chain_meta_service;
-pub mod streaming_account_info_service;
+pub mod chain_meta;
+pub mod streaming;
 mod utils;
 
-pub use chain_meta_service::*;
-pub use streaming_account_info_service::*;
+pub use chain_meta::*;
+pub use streaming::*;

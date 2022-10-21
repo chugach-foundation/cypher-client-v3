@@ -5,7 +5,6 @@ use {
     arrayref::array_ref,
     bytemuck::{bytes_of, from_bytes},
     fixed::types::I80F48,
-    std::cmp::Ordering,
 };
 
 use crate::{constants::*, ClearingType};

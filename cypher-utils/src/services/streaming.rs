@@ -75,7 +75,8 @@ impl StreamingAccountInfoService {
     /// and then subscribes to changes via [`PubsubClient`].
     #[inline(always)]
     pub async fn start_service(self: &Arc<Self>) {
-        match self.get_account_infos().await {
+        let accounts = self.accounts.read().await;
+        match self.get_account_infos(&accounts).await {
             Ok(()) => (),
             Err(e) => {
                 warn!(
@@ -133,6 +134,15 @@ impl StreamingAccountInfoService {
     /// Adds new subscriptions to the service.
     #[inline(always)]
     pub async fn add_subscriptions(self: &Arc<Self>, new_accounts: &[Pubkey]) {
+        match self.get_account_infos(new_accounts).await {
+            Ok(()) => (),
+            Err(e) => {
+                warn!(
+                    "[AIS] There was an error while fetching new account infos: {}",
+                    e.to_string()
+                );
+            }
+        }
         let mut handlers = self.handlers.write().await;
         let mut accounts = self.accounts.write().await;
 
@@ -191,11 +201,10 @@ impl StreamingAccountInfoService {
     }
 
     #[inline(always)]
-    async fn get_account_infos(&self) -> Result<(), ClientError> {
-        let accounts = self.accounts.read().await;
+    async fn get_account_infos(&self, accounts: &[Pubkey]) -> Result<(), ClientError> {
         let rpc_result = self
             .rpc_client
-            .get_multiple_accounts_with_commitment(&accounts, CommitmentConfig::confirmed())
+            .get_multiple_accounts_with_commitment(accounts, CommitmentConfig::confirmed())
             .await;
 
         let res = match rpc_result {

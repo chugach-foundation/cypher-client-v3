@@ -182,7 +182,37 @@ pub async fn get_cypher_zero_copy_account<T: ZeroCopy + Owner>(
 /// This function will return an error if something goes wrong with the RPC request
 /// or the given accounts have an invalid Anchor discriminator for the given type.
 #[inline(always)]
-pub async fn get_multiple_cypher_program_accounts<T: ZeroCopy + Owner>(
+pub async fn get_multiple_cypher_program_accounts<
+    T: AccountSerialize + AccountDeserialize + Discriminator + Clone + Owner,
+>(
+    rpc_client: &RpcClient,
+    accounts: &[Pubkey],
+) -> Result<Vec<Box<T>>, ClientError> {
+    let account_res = rpc_client.get_multiple_accounts(accounts).await;
+    let account_datas = match account_res {
+        Ok(a) => a,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    let states = account_datas
+        .iter()
+        .filter(|a| a.is_some())
+        .map(|a| Box::new(<T>::try_deserialize(&mut a.as_ref().unwrap().data.as_slice()).unwrap()))
+        .collect::<Vec<Box<T>>>();
+
+    Ok(states)
+}
+
+/// Gets multiple Account's state and attempts decoding them into the given Account type.
+///
+/// ### Errors
+///
+/// This function will return an error if something goes wrong with the RPC request
+/// or the given accounts have an invalid Anchor discriminator for the given type.
+#[inline(always)]
+pub async fn get_multiple_cypher_zero_copy_accounts<T: ZeroCopy + Owner>(
     rpc_client: &RpcClient,
     accounts: &[Pubkey],
 ) -> Result<Vec<Box<T>>, ClientError> {

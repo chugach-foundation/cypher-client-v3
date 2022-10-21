@@ -12,7 +12,7 @@ use std::sync::Arc;
 use crate::{
     accounts_cache::AccountsCache,
     utils::{
-        encode_string, get_cypher_zero_copy_account, get_multiple_cypher_program_accounts,
+        encode_string, get_cypher_zero_copy_account, get_multiple_cypher_zero_copy_accounts,
         get_program_accounts,
     },
 };
@@ -99,7 +99,7 @@ where
         rpc_client: &Arc<RpcClient>,
         markets: &[Pubkey],
     ) -> Result<Vec<Self>, ContextError> {
-        match get_multiple_cypher_program_accounts::<T>(&rpc_client, markets).await {
+        match get_multiple_cypher_zero_copy_accounts::<T>(&rpc_client, markets).await {
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()

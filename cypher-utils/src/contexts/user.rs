@@ -18,7 +18,7 @@ use {
 
 use crate::utils::{
     create_transaction, encode_string, get_create_account_ix, get_cypher_zero_copy_account,
-    get_multiple_cypher_program_accounts, send_transaction, send_transactions,
+    get_multiple_cypher_zero_copy_accounts, send_transaction, send_transactions,
 };
 
 use super::ContextError;
@@ -173,7 +173,7 @@ impl UserContext {
             .collect::<Vec<Pubkey>>();
 
         let sub_account_ctxs = if !sub_accounts.is_empty() {
-            match get_multiple_cypher_program_accounts::<CypherSubAccount>(
+            match get_multiple_cypher_zero_copy_accounts::<CypherSubAccount>(
                 &rpc_client,
                 &sub_accounts,
             )
@@ -481,7 +481,7 @@ impl UserContext {
             .collect::<Vec<Pubkey>>();
 
         self.sub_account_ctxs = if !sub_accounts.is_empty() {
-            match get_multiple_cypher_program_accounts::<CypherSubAccount>(
+            match get_multiple_cypher_zero_copy_accounts::<CypherSubAccount>(
                 &rpc_client,
                 &sub_accounts,
             )

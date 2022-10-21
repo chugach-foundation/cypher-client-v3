@@ -31,15 +31,6 @@ pub fn native_to_ui_price(number: u64, base_decimals: u8, quote_decimals: u8) ->
         .unwrap()
 }
 
-pub fn get_oracle_products_space(num_products: usize) -> usize {
-    let num_weights = match num_products.cmp(&2) {
-        Ordering::Greater => num_products,
-        Ordering::Equal => 0,
-        Ordering::Less => 0,
-    };
-    8 + 8 + 32 + 32 + 8 + num_products * 32 + 8 + num_weights * 2
-}
-
 pub fn get_zero_copy_account<T: ZeroCopy + Owner>(account_data: &[u8]) -> Box<T> {
     let disc_bytes = array_ref![account_data, 0, 8];
     assert_eq!(disc_bytes, &T::discriminator());

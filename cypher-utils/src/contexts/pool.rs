@@ -4,7 +4,7 @@ use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 
 use crate::utils::{
-    get_cypher_zero_copy_account, get_multiple_cypher_program_accounts, get_program_accounts,
+    get_cypher_zero_copy_account, get_multiple_cypher_zero_copy_accounts, get_program_accounts,
 };
 
 use super::ContextError;
@@ -50,7 +50,7 @@ impl PoolContext {
         rpc_client: &Arc<RpcClient>,
         pools: &[Pubkey],
     ) -> Result<Vec<Self>, ContextError> {
-        match get_multiple_cypher_program_accounts::<Pool>(&rpc_client, pools).await {
+        match get_multiple_cypher_zero_copy_accounts::<Pool>(&rpc_client, pools).await {
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()

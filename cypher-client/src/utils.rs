@@ -107,11 +107,11 @@ pub fn derive_account_address(authority: &Pubkey, account_number: u8) -> (Pubkey
     (address, bump)
 }
 
-pub fn derive_sub_account_address(authority: &Pubkey, account_number: u8) -> (Pubkey, u8) {
+pub fn derive_sub_account_address(master_account: &Pubkey, account_number: u8) -> (Pubkey, u8) {
     let (address, bump) = Pubkey::find_program_address(
         &[
             B_CYPHER_SUB_ACCOUNT,
-            authority.as_ref(),
+            master_account.as_ref(),
             account_number.to_le_bytes().as_ref(),
         ],
         &crate::id(),
@@ -148,10 +148,16 @@ pub fn derive_whitelist_address(account_owner: &Pubkey) -> (Pubkey, u8) {
 pub fn derive_spot_open_orders_address(
     dex_market: &Pubkey,
     master_account: &Pubkey,
+    sub_account: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[B_OPEN_ORDERS, dex_market.as_ref(), master_account.as_ref()],
-        &crate::id(),
+        &[
+            B_OPEN_ORDERS,
+            dex_market.as_ref(),
+            master_account.as_ref(),
+            sub_account.as_ref(),
+        ],
+        &cypher::id(),
     )
 }
 

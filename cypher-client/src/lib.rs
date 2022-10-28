@@ -44,7 +44,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("cyph3iWWJctHgNosbRqxg4GjMHsEL8wAPBnKzPRxEdF");
+declare_id!("cyph3LxUD2wDoA5VUnB8nhXXwArxC97gnXvSiwjg1Zm");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;
@@ -309,6 +309,16 @@ impl Cache {
     /// the borrow index of the spot token this cache represents
     pub fn borrow_index(&self) -> I80F48 {
         I80F48::from_bits(self.borrow_index)
+    }
+
+    /// the oracle price
+    pub fn oracle_price(&self) -> I80F48 {
+        I80F48::from_bits(self.oracle_price)
+    }
+
+    /// the twap price
+    pub fn market_price(&self) -> I80F48 {
+        I80F48::from_bits(self.market_price)
     }
 
     // spot
@@ -746,6 +756,39 @@ impl Pool {
     /// the borrows of this pool
     pub fn borrow_index(&self) -> I80F48 {
         I80F48::from_bits(self.borrow_index)
+    }
+}
+
+impl FuturesMarket {
+    /// the open interest
+    pub fn open_interest(&self) -> I80F48 {
+        I80F48::from_bits(self.open_interest)
+    }
+
+    /// the twap price
+    pub fn market_price(&self) -> I80F48 {
+        I80F48::from_bits(self.market_price)
+    }
+
+    pub fn total_raised(&self) -> I80F48 {
+        I80F48::from_bits(self.total_raised)
+    }
+}
+
+impl PerpetualMarket {
+    /// the open interest
+    pub fn open_interest(&self) -> I80F48 {
+        I80F48::from_bits(self.open_interest)
+    }
+
+    /// the long funding
+    pub fn long_funding(&self) -> I80F48 {
+        I80F48::from_bits(self.long_funding)
+    }
+
+    /// the short funding
+    pub fn short_funding(&self) -> I80F48 {
+        I80F48::from_bits(self.short_funding)
     }
 }
 

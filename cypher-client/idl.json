@@ -3171,13 +3171,11 @@
             "type": "u64"
           },
           {
-            "name": "padding2",
-            "type": {
-              "array": [
-                "u64",
-                2
-              ]
-            }
+            "name": "openInterest",
+            "docs": [
+              "the total open interest in native units"
+            ],
+            "type": "i128"
           },
           {
             "name": "totalRaised",

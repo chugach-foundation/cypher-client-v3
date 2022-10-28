@@ -1262,13 +1262,11 @@ pub fn close_pool(
     pool: &Pubkey,
     oracle_products: &Pubkey,
     rent_destination: &Pubkey,
-    vault_signer: &Pubkey,
     authority: &Pubkey,
 ) -> Instruction {
     let accounts = ClosePool {
         pool: *pool,
         oracle_products: *oracle_products,
-        vault_signer: *vault_signer,
         rent_destination: *rent_destination,
         authority: *authority,
         token_program: token::ID,

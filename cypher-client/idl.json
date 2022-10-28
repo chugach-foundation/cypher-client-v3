@@ -333,11 +333,6 @@
           "isSigner": false
         },
         {
-          "name": "vaultSigner",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "rentDestination",
           "isMut": true,
           "isSigner": true

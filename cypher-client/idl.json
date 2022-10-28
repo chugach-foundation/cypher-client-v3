@@ -16,7 +16,14 @@
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "cacheIndex",
+          "type": {
+            "defined": "usize"
+          }
+        }
+      ]
     },
     {
       "name": "claimIdoProceeds",
@@ -27,17 +34,12 @@
           "isSigner": false
         },
         {
-          "name": "tokenPool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVault",
+          "name": "quoteVault",
           "isMut": true,
           "isSigner": false
         },
@@ -50,6 +52,11 @@
           "name": "idoAuthority",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenProgram",
@@ -68,17 +75,12 @@
           "isSigner": false
         },
         {
-          "name": "tokenPool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVault",
+          "name": "quoteVault",
           "isMut": true,
           "isSigner": false
         },
@@ -91,6 +93,11 @@
           "name": "idoAuthority",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenProgram",
@@ -326,6 +333,42 @@
           "isSigner": false
         },
         {
+          "name": "vaultSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rentDestination",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closePoolNode",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "tokenMint",
           "isMut": false,
           "isSigner": false
@@ -333,6 +376,11 @@
         {
           "name": "tokenVault",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -560,16 +608,6 @@
           "isSigner": false
         },
         {
-          "name": "quoteMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "quoteVault",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "quotePool",
           "isMut": false,
           "isSigner": false
@@ -648,16 +686,6 @@
           "isSigner": false
         },
         {
-          "name": "quoteMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "quoteVault",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "quotePool",
           "isMut": false,
           "isSigner": false
@@ -731,13 +759,23 @@
           "isSigner": false
         },
         {
-          "name": "tokenMint",
-          "isMut": false,
+          "name": "poolNode",
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "tokenVault",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -782,6 +820,76 @@
           "type": {
             "defined": "CreatePoolArgs"
           }
+        }
+      ]
+    },
+    {
+      "name": "createPoolNode",
+      "accounts": [
+        {
+          "name": "clearing",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "vaultSignerBump",
+          "type": "u8"
+        },
+        {
+          "name": "nodeNumber",
+          "type": "u8"
         }
       ]
     },
@@ -929,6 +1037,11 @@
           "isSigner": false
         },
         {
+          "name": "poolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "tokenMint",
           "isMut": false,
           "isSigner": false
@@ -945,7 +1058,7 @@
         },
         {
           "name": "authority",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -986,6 +1099,11 @@
         },
         {
           "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -1054,8 +1172,8 @@
       "name": "createOracleProducts",
       "accounts": [
         {
-          "name": "clearing",
-          "isMut": false,
+          "name": "cacheAccount",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1263,7 +1381,7 @@
           "isSigner": false
         },
         {
-          "name": "assetPool",
+          "name": "assetPoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -1274,6 +1392,11 @@
         },
         {
           "name": "liabilityPool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liabilityPoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -1457,17 +1580,12 @@
           "isSigner": false
         },
         {
-          "name": "underlyingMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "underlyingPool",
+          "name": "underlyingPoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         }
@@ -1498,7 +1616,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         }
@@ -1519,13 +1637,8 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "quoteMint",
-          "isMut": false,
           "isSigner": false
         },
         {
@@ -1536,6 +1649,11 @@
         {
           "name": "destinationTokenAccount",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1555,32 +1673,12 @@
       "name": "sweepPoolFees",
       "accounts": [
         {
-          "name": "clearing",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "tokenPool",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "quotePool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "quoteMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVault",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -1592,6 +1690,11 @@
         {
           "name": "destinationTokenAccount",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1641,7 +1744,7 @@
           "isSigner": false
         },
         {
-          "name": "assetPool",
+          "name": "assetPoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -1740,6 +1843,11 @@
       "name": "updateTokenIndex",
       "accounts": [
         {
+          "name": "cacheAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "pool",
           "isMut": true,
           "isSigner": false
@@ -1776,6 +1884,11 @@
           "isSigner": false
         },
         {
+          "name": "poolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "tokenVault",
           "isMut": true,
           "isSigner": false
@@ -1787,6 +1900,11 @@
         },
         {
           "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1832,22 +1950,17 @@
           "isSigner": false
         },
         {
-          "name": "assetPool",
+          "name": "assetPoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "assetMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "quoteMint",
           "isMut": false,
           "isSigner": false
         },
@@ -2062,22 +2175,17 @@
           "isSigner": false
         },
         {
-          "name": "assetPool",
+          "name": "assetPoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "assetMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "quoteMint",
           "isMut": false,
           "isSigner": false
         },
@@ -2089,6 +2197,11 @@
         {
           "name": "quoteVault",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -2195,22 +2308,17 @@
           "isSigner": false
         },
         {
-          "name": "assetPool",
+          "name": "assetPoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "assetMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "quoteMint",
           "isMut": false,
           "isSigner": false
         },
@@ -2326,7 +2434,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -2435,7 +2543,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -2508,7 +2616,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -2559,7 +2667,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -2625,7 +2733,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -2729,7 +2837,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -2782,7 +2890,7 @@
           "isSigner": false
         },
         {
-          "name": "quotePool",
+          "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
         },
@@ -3051,7 +3159,7 @@
             "docs": [
               "the twap price"
             ],
-            "type": "u64"
+            "type": "i128"
           },
           {
             "name": "totalBorrows",
@@ -3072,7 +3180,7 @@
             "type": {
               "array": [
                 "u64",
-                3
+                2
               ]
             }
           },
@@ -3362,6 +3470,142 @@
       }
     },
     {
+      "name": "PoolNode",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cacheIndex",
+            "docs": [
+              "the index of the cache for the pool that this node belongs to"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "vaultSignerSeed",
+            "docs": [
+              "the bump seed"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "nodeNumber",
+            "docs": [
+              "the number of the node, also used as a seed for the pool node pda"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                12
+              ]
+            }
+          },
+          {
+            "name": "selfAddress",
+            "docs": [
+              "the pool node's address, used as a seed for the vault signer"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "authority",
+            "docs": [
+              "the authority over this account"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "cache",
+            "docs": [
+              "the cache account"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "pool",
+            "docs": [
+              "the pool this node belongs to"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenMint",
+            "docs": [
+              "the node's token mint"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenVault",
+            "docs": [
+              "the node's token vault"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "vaultSigner",
+            "docs": [
+              "the node's vault signer"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "deposits",
+            "docs": [
+              "the amount of deposits"
+            ],
+            "type": "i128"
+          },
+          {
+            "name": "borrows",
+            "docs": [
+              "the amount of borrows"
+            ],
+            "type": "i128"
+          },
+          {
+            "name": "accumBorrows",
+            "docs": [
+              "accumulated borrows"
+            ],
+            "type": "i128"
+          },
+          {
+            "name": "accumRepays",
+            "docs": [
+              "accumulated repays"
+            ],
+            "type": "i128"
+          },
+          {
+            "name": "protocolFees",
+            "docs": [
+              "protocol fees accumulated so far"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "padding2",
+            "type": {
+              "array": [
+                "u64",
+                1
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "Pool",
       "type": {
         "kind": "struct",
@@ -3462,14 +3706,14 @@
           {
             "name": "deposits",
             "docs": [
-              "the amount of deposits"
+              "the amount of deposits across all nodes"
             ],
             "type": "i128"
           },
           {
             "name": "borrows",
             "docs": [
-              "the amount of borrows"
+              "the amount of borrows across all nodes"
             ],
             "type": "i128"
           },
@@ -3490,28 +3734,14 @@
           {
             "name": "accumDepositInterestPayment",
             "docs": [
-              "accumulated deposit interest payments denominated in quote currency."
+              "accumulated deposit interest payments denominated in quote currency"
             ],
             "type": "i128"
           },
           {
             "name": "accumBorrowInterestPayment",
             "docs": [
-              "accumulated borrow interest payments denominated in quote currency."
-            ],
-            "type": "i128"
-          },
-          {
-            "name": "accumBorrows",
-            "docs": [
-              "accumulated borrows"
-            ],
-            "type": "i128"
-          },
-          {
-            "name": "accumRepays",
-            "docs": [
-              "accumulated repays"
+              "accumulated borrow interest payments denominated in quote currency"
             ],
             "type": "i128"
           },
@@ -3541,7 +3771,18 @@
             "type": {
               "array": [
                 "u64",
-                8
+                12
+              ]
+            }
+          },
+          {
+            "name": "nodes",
+            "type": {
+              "array": [
+                {
+                  "defined": "NodeInfo"
+                },
+                24
               ]
             }
           }
@@ -4228,9 +4469,9 @@
             "type": "i8"
           },
           {
-            "name": "oracleDecimals",
+            "name": "decimals",
             "docs": [
-              "the decimals used for the target oracle price of this market's asset"
+              "the decimals used for the derivative asset positions"
             ],
             "type": "u8"
           },
@@ -4378,9 +4619,9 @@
             "type": "u64"
           },
           {
-            "name": "oracleDecimals",
+            "name": "decimals",
             "docs": [
-              "the decimals used for the target oracle price of this market's asset"
+              "the decimals used for the derivative asset positions"
             ],
             "type": "u8"
           },
@@ -4405,9 +4646,16 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "vaultSignerBump",
+            "docs": [
+              "the vault signer bump"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "poolBump",
             "docs": [
-              "the bump of the pool account"
+              "the pool bump"
             ],
             "type": "u8"
           },
@@ -4433,16 +4681,9 @@
             "type": "u16"
           },
           {
-            "name": "splDecimals",
+            "name": "decimals",
             "docs": [
               "the decimals of the spl token mint associated with the pool"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "oracleDecimals",
-            "docs": [
-              "the decimals used for the target oracle price of this pool's asset"
             ],
             "type": "u8"
           },
@@ -4695,14 +4936,14 @@
               "",
               "would be ( (1*10^3) * 30_000) / 10^6 -> (1_000 * 30_000) / 1_000_000 -> 30_000_000 / 1_000_000 -> 30 quote tokens"
             ],
-            "type": "u64"
+            "type": "i128"
           },
           {
             "name": "marketPrice",
             "docs": [
               "the twap price for the futures market"
             ],
-            "type": "u64"
+            "type": "i128"
           },
           {
             "name": "updatedAt",
@@ -4712,18 +4953,13 @@
             "type": "u64"
           },
           {
-            "name": "expiryOraclePrice",
-            "docs": [
-              "the oracle price at the expiry of a futures market",
-              "",
-              "this value gets set whenever a futures market reaches expiry",
-              "",
-              "if we're caching the oracle price and between the last cache and the current one the market expired AND this value",
-              "is equal to default, we will set it.",
-              "",
-              "whenever a market's expiry gets rolled, which requires all positions to have been settled, this value gets reset"
-            ],
-            "type": "u64"
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
           },
           {
             "name": "depositIndex",
@@ -4738,15 +4974,6 @@
               "the borrow index of the spot token"
             ],
             "type": "i128"
-          },
-          {
-            "name": "padding1",
-            "type": {
-              "array": [
-                "u64",
-                2
-              ]
-            }
           },
           {
             "name": "spotInitAssetWeight",
@@ -4833,11 +5060,32 @@
             "type": "u8"
           },
           {
+            "name": "decimals",
+            "docs": [
+              "the decimals of the spl token traded on the spot market and available for deposit"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "futuresDecimals",
+            "docs": [
+              "the decimals of derivative asset for futures markets"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "perpDecimals",
+            "docs": [
+              "the decimals of derivative asset for perpetual markets"
+            ],
+            "type": "u8"
+          },
+          {
             "name": "padding2",
             "type": {
               "array": [
                 "u8",
-                4
+                1
               ]
             }
           }
@@ -5031,7 +5279,7 @@
             "type": "u8"
           },
           {
-            "name": "oracleDecimals",
+            "name": "decimals",
             "docs": [
               "the decimals used for the target oracle price of this pool's asset"
             ],
@@ -5219,18 +5467,13 @@
             "type": "publicKey"
           },
           {
-            "name": "quoteMint",
-            "docs": [
-              "the quote mint"
-            ],
-            "type": "publicKey"
-          },
-          {
-            "name": "quoteVault",
-            "docs": [
-              "the quote vault"
-            ],
-            "type": "publicKey"
+            "name": "padding1",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
           },
           {
             "name": "cache",
@@ -5240,13 +5483,11 @@
             "type": "publicKey"
           },
           {
-            "name": "padding1",
-            "type": {
-              "array": [
-                "u64",
-                4
-              ]
-            }
+            "name": "quotePool",
+            "docs": [
+              "the quote pool"
+            ],
+            "type": "publicKey"
           },
           {
             "name": "padding2",
@@ -5407,6 +5648,44 @@
       }
     },
     {
+      "name": "NodeInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "poolNode",
+            "docs": [
+              "the node"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "deposits",
+            "docs": [
+              "the deposits in the node"
+            ],
+            "type": "i128"
+          },
+          {
+            "name": "borrows",
+            "docs": [
+              "the borrows in the node"
+            ],
+            "type": "i128"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u64",
+                8
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolConfig",
       "type": {
         "kind": "struct",
@@ -5440,16 +5719,9 @@
             "type": "u16"
           },
           {
-            "name": "splDecimals",
+            "name": "decimals",
             "docs": [
               "the decimals of the spl token mint associated with the pool"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "oracleDecimals",
-            "docs": [
-              "the decimals used for the target oracle price of this pool's asset"
             ],
             "type": "u8"
           },
@@ -5486,7 +5758,7 @@
             "type": {
               "array": [
                 "u8",
-                2
+                3
               ]
             }
           },
@@ -5529,7 +5801,7 @@
         "fields": [
           {
             "name": "price",
-            "type": "u64"
+            "type": "i128"
           },
           {
             "name": "timestamp",
@@ -5940,6 +6212,12 @@
             "name": "Create"
           },
           {
+            "name": "AddNode"
+          },
+          {
+            "name": "RemoveNode"
+          },
+          {
             "name": "Close"
           }
         ]
@@ -6218,12 +6496,7 @@
           "index": false
         },
         {
-          "name": "quoteMint",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "quoteVault",
+          "name": "quotePool",
           "type": "publicKey",
           "index": false
         },
@@ -6267,7 +6540,7 @@
           "index": false
         },
         {
-          "name": "oracleDecimals",
+          "name": "decimals",
           "type": "u8",
           "index": false
         },
@@ -6290,6 +6563,11 @@
         },
         {
           "name": "pool",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "poolNode",
           "type": "publicKey",
           "index": false
         },
@@ -6329,12 +6607,7 @@
           "index": false
         },
         {
-          "name": "oracleDecimals",
-          "type": "u8",
-          "index": false
-        },
-        {
-          "name": "splDecimals",
+          "name": "decimals",
           "type": "u8",
           "index": false
         },
@@ -6504,6 +6777,11 @@
         },
         {
           "name": "pool",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "poolNode",
           "type": "publicKey",
           "index": false
         },
@@ -6708,226 +6986,261 @@
     },
     {
       "code": 6028,
+      "name": "InvalidPool",
+      "msg": "the provided pool is not valig for the given mint"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidPoolNode",
+      "msg": "the provided pool node is not valid for the given mint"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidPoolNodeVault",
+      "msg": "the provided pool node vault is not valid"
+    },
+    {
+      "code": 6031,
+      "name": "InvalidVaultSigner",
+      "msg": "the provided vault signer is invalid"
+    },
+    {
+      "code": 6032,
       "name": "OrderNotFound",
       "msg": "the provided order id could not be found"
     },
     {
-      "code": 6029,
+      "code": 6033,
       "name": "InvalidOrderSide",
       "msg": "the provided order side is invalid"
     },
     {
-      "code": 6030,
+      "code": 6034,
+      "name": "OracleProductsCacheNotFound",
+      "msg": "the cache corresponding to the given oracle products wasn't found"
+    },
+    {
+      "code": 6035,
       "name": "CacheAccountFull",
       "msg": "the cache account is full"
     },
     {
-      "code": 6031,
+      "code": 6036,
+      "name": "PoolAccountFull",
+      "msg": "the pool account is full"
+    },
+    {
+      "code": 6037,
+      "name": "PoolNodeNotFound",
+      "msg": "pool node not found"
+    },
+    {
+      "code": 6038,
       "name": "CacheAccountWithOracleProducts",
       "msg": "the cache account has initialized oracle products"
     },
     {
-      "code": 6032,
+      "code": 6039,
       "name": "OracleProductsWithTokenMint",
       "msg": "the oracle products account has an initialized token mint"
     },
     {
-      "code": 6033,
+      "code": 6040,
       "name": "OracleProductsWithFuturesMarket",
       "msg": "the oracle products account has an initialized futuresmarket"
     },
     {
-      "code": 6034,
+      "code": 6041,
       "name": "OracleProductsWithPerpetualMarket",
       "msg": "the oracle products account has an initialized perp market"
     },
     {
-      "code": 6035,
+      "code": 6042,
       "name": "FuturesOrdersAccountFull",
       "msg": "the futures orders account is full"
     },
     {
-      "code": 6036,
+      "code": 6043,
       "name": "FuturesOrdersAccountMustBeEmpty",
       "msg": "attempted to close a futures orders account with remaining orders"
     },
     {
-      "code": 6037,
+      "code": 6044,
       "name": "PoolDexMarketAlreadyInitialized",
       "msg": "the provided pool already has an initialized dex market"
     },
     {
-      "code": 6038,
+      "code": 6045,
       "name": "OracleProductsAlreadyInitialized",
       "msg": "the given oracle products account has already been initialized"
     },
     {
-      "code": 6039,
+      "code": 6046,
       "name": "StaleAccountCache",
       "msg": "the given account has stale cached positions"
     },
     {
-      "code": 6040,
+      "code": 6047,
       "name": "StaleOracleCache",
       "msg": "the given oracle products account has a stale cache"
     },
     {
-      "code": 6041,
+      "code": 6048,
       "name": "PrivateClearing",
       "msg": "attempted to create account in a private clearing"
     },
     {
-      "code": 6042,
+      "code": 6049,
       "name": "PublicClearing",
       "msg": "attempted to create whitelisted account in a public clearing"
     },
     {
-      "code": 6043,
+      "code": 6050,
       "name": "MarketInactive",
       "msg": "provided market is inactive"
     },
     {
-      "code": 6044,
+      "code": 6051,
       "name": "MarketAlreadyActive",
       "msg": "provided market is already active"
     },
     {
-      "code": 6045,
+      "code": 6052,
       "name": "MarketWithOpenInterestCannotBeclosed",
       "msg": "perpetual market with exisitng open interest cannot be closed"
     },
     {
-      "code": 6046,
+      "code": 6053,
       "name": "ActiveMarketCannotSettlePosition",
       "msg": "active market cannot settle position"
     },
     {
-      "code": 6047,
+      "code": 6054,
       "name": "ActiveMarketCannotSweepFees",
       "msg": "active market cannot sweep fees"
     },
     {
-      "code": 6048,
+      "code": 6055,
       "name": "ActiveMarketCannotClaimIdoProceeds",
       "msg": "active market cannot claim IDO proceeds"
     },
     {
-      "code": 6049,
+      "code": 6056,
       "name": "ActiveMarketCannotBeClosed",
       "msg": "active market cannot be closed"
     },
     {
-      "code": 6050,
+      "code": 6057,
       "name": "ActivePoolCannotBeClosed",
       "msg": "active pool cannot be closed"
     },
     {
-      "code": 6051,
+      "code": 6058,
       "name": "MarketNotForPhysicalDelivery",
       "msg": "provided market was not created for physical delivery"
     },
     {
-      "code": 6052,
+      "code": 6059,
       "name": "SubAccountAliasTooLong",
       "msg": "the provided sub account alias is too long"
     },
     {
-      "code": 6053,
+      "code": 6060,
       "name": "UnableToFindPosition",
       "msg": "unable to find position"
     },
     {
-      "code": 6054,
+      "code": 6061,
       "name": "UnableToFindOrderByOrderId",
       "msg": "unable to find order with given order id"
     },
     {
-      "code": 6055,
+      "code": 6062,
       "name": "UnableToFindOrderByClientId",
       "msg": "unable to find order with given client order id"
     },
     {
-      "code": 6056,
+      "code": 6063,
       "name": "UnableToPostOrder",
       "msg": "unable to post order"
     },
     {
-      "code": 6057,
+      "code": 6064,
       "name": "SpotOpenOrdersHasUnsettledFunds",
       "msg": "the provided spot open orders account has unsettled funds"
     },
     {
-      "code": 6058,
+      "code": 6065,
       "name": "RemainingAccountNotWritable",
       "msg": "specified sub account is not writable"
     },
     {
-      "code": 6059,
+      "code": 6066,
       "name": "RemainingAccountWithInvalidOwner",
       "msg": "specified sub account is not writable"
     },
     {
-      "code": 6060,
+      "code": 6067,
       "name": "RemainingAccountWithInvalidAuthority",
       "msg": "specified sub account is not owned by the same authority"
     },
     {
-      "code": 6061,
+      "code": 6068,
       "name": "RemainingAccountWithInvalidMasterAccount",
       "msg": "specified sub account does not belong to the specified master account"
     },
     {
-      "code": 6062,
+      "code": 6069,
       "name": "RemainingUserAccountMissing",
       "msg": "remaining user account missing"
     },
     {
-      "code": 6063,
+      "code": 6070,
       "name": "RemainingAccountsMissing",
       "msg": "there are remaining accounts missing from the instruction"
     },
     {
-      "code": 6064,
+      "code": 6071,
       "name": "SubAccountCRatioBelowOptimal",
       "msg": "sub account c-ratio is below optimal"
     },
     {
-      "code": 6065,
+      "code": 6072,
       "name": "MasterAccountCRatioBelowOptimal",
       "msg": "master account c-ratio is below optimal"
     },
     {
-      "code": 6066,
+      "code": 6073,
       "name": "TotalBorrowsGreaterThanDeposits",
       "msg": "pool total borrows amount are greater than total deposits"
     },
     {
-      "code": 6067,
+      "code": 6074,
       "name": "MarketTotalBorrowsGreaterThanTokenSupply",
       "msg": "market total borrows amount are greater than total token supply"
     },
     {
-      "code": 6068,
+      "code": 6075,
       "name": "OrderAmountExceedsVaultBalance",
       "msg": "attempted to submit an order with greater amount than is available in the vault"
     },
     {
-      "code": 6069,
+      "code": 6076,
       "name": "TransactionAborted",
       "msg": "the transaction has been aborted due to predetermined functionality"
     },
     {
-      "code": 6070,
+      "code": 6077,
       "name": "AccountWithSubAccounts",
       "msg": "the provided account has initialized sub accounts"
     },
     {
-      "code": 6071,
+      "code": 6078,
       "name": "SubAccountWithPositions",
       "msg": "the provided sub account has existing position"
     },
     {
-      "code": 6072,
+      "code": 6079,
       "name": "Default",
       "msg": "Default"
     }

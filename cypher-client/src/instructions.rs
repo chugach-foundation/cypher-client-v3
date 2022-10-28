@@ -9,16 +9,17 @@ use crate::{
     accounts::{
         CacheOraclePrices, CancelFuturesOrder, CancelPerpOrder, CancelSpotOrder,
         CancelSpotOrderDex, ClaimIdoProceeds, CloseAccount, CloseCacheAccount, CloseClearing,
-        CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket, ClosePool, CloseSpotOpenOrders,
-        CloseSubAccount, ConsumeFuturesEvents, ConsumePerpEvents, CreateAccount,
-        CreateFuturesMarket, CreateOracleProducts, CreateOrdersAccount, CreatePerpMarket,
-        CreatePool, CreatePrivateClearing, CreatePublicClearing, CreateSubAccount, CreateWhitelist,
-        CreateWhitelistedAccount, DepositDeliverable, DepositFunds, InitCacheAccount,
-        InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder, NewSpotOrder, NewSpotOrderDex,
-        RollMarketExpiry, SetAccountDelegate, SetOracleProducts, SetSubAccountDelegate,
-        SettleFuturesFunds, SettlePerpFunds, SettlePosition, SettlePositionWithDelivery,
-        SettleSpotFunds, SettleSpotFundsDex, TransferBetweenSubAccounts, UpdateAccountMargin,
-        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
+        CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket, ClosePool, ClosePoolNode,
+        CloseSpotOpenOrders, CloseSubAccount, ConsumeFuturesEvents, ConsumePerpEvents,
+        CreateAccount, CreateFuturesMarket, CreateOracleProducts, CreateOrdersAccount,
+        CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing, CreatePublicClearing,
+        CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount, DepositDeliverable,
+        DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder,
+        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetOracleProducts,
+        SetSubAccountDelegate, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
+        SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
+        TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
+        UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
@@ -120,7 +121,7 @@ pub fn create_whitelisted_account(
     }
 }
 
-pub fn create_subaccount(
+pub fn create_sub_account(
     authority: &Pubkey,
     payer: &Pubkey,
     account: &Pubkey,
@@ -154,8 +155,6 @@ pub fn create_futures_market(
     market: &Pubkey,
     price_history: &Pubkey,
     oracle_products: &Pubkey,
-    quote_mint: &Pubkey,
-    quote_vault: &Pubkey,
     quote_pool: &Pubkey,
     orderbook: &Pubkey,
     bids: &Pubkey,
@@ -171,8 +170,6 @@ pub fn create_futures_market(
         market: *market,
         price_history: *price_history,
         oracle_products: *oracle_products,
-        quote_mint: *quote_mint,
-        quote_vault: *quote_vault,
         quote_pool: *quote_pool,
         orderbook: *orderbook,
         bids: *bids,
@@ -196,8 +193,6 @@ pub fn create_perp_market(
     cache: &Pubkey,
     market: &Pubkey,
     oracle_products: &Pubkey,
-    quote_mint: &Pubkey,
-    quote_vault: &Pubkey,
     quote_pool: &Pubkey,
     orderbook: &Pubkey,
     bids: &Pubkey,
@@ -212,8 +207,6 @@ pub fn create_perp_market(
         cache_account: *cache,
         market: *market,
         oracle_products: *oracle_products,
-        quote_mint: *quote_mint,
-        quote_vault: *quote_vault,
         quote_pool: *quote_pool,
         orderbook: *orderbook,
         bids: *bids,
@@ -236,8 +229,10 @@ pub fn create_pool(
     clearing: &Pubkey,
     cache: &Pubkey,
     pool: &Pubkey,
+    pool_node: &Pubkey,
     token_mint: &Pubkey,
     token_vault: &Pubkey,
+    vault_signer: &Pubkey,
     oracle_products: &Pubkey,
     dex_market: &Pubkey,
     authority: &Pubkey,
@@ -248,8 +243,10 @@ pub fn create_pool(
         clearing: *clearing,
         cache_account: *cache,
         pool: *pool,
+        pool_node: *pool_node,
         token_mint: *token_mint,
         token_vault: *token_vault,
+        vault_signer: *vault_signer,
         oracle_products: *oracle_products,
         dex_market: *dex_market,
         authority: *authority,
@@ -259,6 +256,42 @@ pub fn create_pool(
         rent: Rent::id(),
     };
     let ix_data = crate::instruction::CreatePool { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn create_pool_node(
+    clearing: &Pubkey,
+    pool: &Pubkey,
+    pool_node: &Pubkey,
+    token_mint: &Pubkey,
+    token_vault: &Pubkey,
+    vault_signer: &Pubkey,
+    authority: &Pubkey,
+    payer: &Pubkey,
+    vault_signer_bump: u8,
+    node_number: u8,
+) -> Instruction {
+    let accounts = CreatePoolNode {
+        clearing: *clearing,
+        pool: *pool,
+        pool_node: *pool_node,
+        token_mint: *token_mint,
+        token_vault: *token_vault,
+        vault_signer: *vault_signer,
+        authority: *authority,
+        payer: *payer,
+        system_program: system_program::ID,
+        token_program: token::ID,
+        rent: Rent::id(),
+    };
+    let ix_data = crate::instruction::CreatePoolNode {
+        _vault_signer_bump: vault_signer_bump,
+        _node_number: node_number,
+    };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),
@@ -290,7 +323,7 @@ pub fn create_whitelist(
 }
 
 pub fn create_oracle_products(
-    clearing: &Pubkey,
+    cache_account: &Pubkey,
     oracle_products: &Pubkey,
     payer: &Pubkey,
     authority: &Pubkey,
@@ -298,7 +331,7 @@ pub fn create_oracle_products(
     args: CreateOracleProductsArgs,
 ) -> Instruction {
     let mut accounts = CreateOracleProducts {
-        clearing: *clearing,
+        cache_account: *cache_account,
         oracle_products: *oracle_products,
         authority: *authority,
         payer: *payer,
@@ -431,30 +464,29 @@ pub fn cache_oracle_prices(
     cache_account: &Pubkey,
     oracle_products: &Pubkey,
     price_accounts: &[Pubkey],
+    cache_index: usize,
     pool: &Option<Pubkey>,
     futures_market: &Option<Pubkey>,
-    perp_market: &Option<Pubkey>,
 ) -> Instruction {
     let mut accounts = CacheOraclePrices {
         cache_account: *cache_account,
         oracle_products: *oracle_products,
     }
     .to_account_metas(Some(false));
+    accounts.extend(
+        price_accounts
+            .iter()
+            .map(|p| AccountMeta::new_readonly(*p, false)),
+    );
     if pool.is_some() {
         accounts.push(AccountMeta::new_readonly(pool.unwrap(), false));
     }
     if futures_market.is_some() {
         accounts.push(AccountMeta::new_readonly(futures_market.unwrap(), false));
     }
-    if perp_market.is_some() {
-        accounts.push(AccountMeta::new_readonly(perp_market.unwrap(), false));
-    }
-    accounts.extend(
-        price_accounts
-            .iter()
-            .map(|p| AccountMeta::new_readonly(*p, false)),
-    );
-    let ix_data = crate::instruction::CacheOraclePrices {};
+    let ix_data = crate::instruction::CacheOraclePrices {
+        _cache_index: cache_index,
+    };
     Instruction {
         program_id: crate::id(),
         accounts,
@@ -531,6 +563,7 @@ pub fn deposit_funds(
     master_account: &Pubkey,
     sub_account: &Pubkey,
     pool: &Pubkey,
+    pool_node: &Pubkey,
     source_token_account: &Pubkey,
     token_vault: &Pubkey,
     token_mint: &Pubkey,
@@ -543,6 +576,7 @@ pub fn deposit_funds(
         master_account: *master_account,
         sub_account: *sub_account,
         pool: *pool,
+        pool_node: *pool_node,
         source_token_account: *source_token_account,
         token_vault: *token_vault,
         token_mint: *token_mint,
@@ -563,8 +597,10 @@ pub fn withdraw_funds(
     master_account: &Pubkey,
     sub_account: &Pubkey,
     pool: &Pubkey,
+    pool_node: &Pubkey,
     destination_token_account: &Pubkey,
     token_vault: &Pubkey,
+    vault_signer: &Pubkey,
     token_mint: &Pubkey,
     authority: &Pubkey,
     amount: u64,
@@ -575,7 +611,9 @@ pub fn withdraw_funds(
         master_account: *master_account,
         sub_account: *sub_account,
         pool: *pool,
+        pool_node: *pool_node,
         token_vault: *token_vault,
+        vault_signer: *vault_signer,
         destination_token_account: *destination_token_account,
         token_mint: *token_mint,
         authority: *authority,
@@ -601,7 +639,7 @@ pub fn new_futures_order(
     event_queue: &Pubkey,
     bids: &Pubkey,
     asks: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
     authority: &Pubkey,
     args: NewDerivativeOrderArgs,
 ) -> Instruction {
@@ -617,7 +655,7 @@ pub fn new_futures_order(
         event_queue: *event_queue,
         bids: *bids,
         asks: *asks,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::NewFuturesOrder { _args: args };
@@ -639,7 +677,7 @@ pub fn cancel_futures_order(
     event_queue: &Pubkey,
     bids: &Pubkey,
     asks: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
     authority: &Pubkey,
     args: CancelOrderArgs,
 ) -> Instruction {
@@ -654,7 +692,7 @@ pub fn cancel_futures_order(
         event_queue: *event_queue,
         bids: *bids,
         asks: *asks,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::CancelFuturesOrder { _args: args };
@@ -672,7 +710,7 @@ pub fn settle_futures_funds(
     sub_account: &Pubkey,
     market: &Pubkey,
     open_orders: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
     authority: &Pubkey,
 ) -> Instruction {
     let accounts = SettleFuturesFunds {
@@ -682,7 +720,7 @@ pub fn settle_futures_funds(
         sub_account: *sub_account,
         market: *market,
         open_orders: *open_orders,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::SettleFuturesFunds {};
@@ -704,7 +742,7 @@ pub fn new_perp_order(
     event_queue: &Pubkey,
     bids: &Pubkey,
     asks: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
     authority: &Pubkey,
     args: NewDerivativeOrderArgs,
 ) -> Instruction {
@@ -719,7 +757,7 @@ pub fn new_perp_order(
         event_queue: *event_queue,
         bids: *bids,
         asks: *asks,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::NewPerpOrder { _args: args };
@@ -741,7 +779,7 @@ pub fn cancel_perp_order(
     event_queue: &Pubkey,
     bids: &Pubkey,
     asks: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
     authority: &Pubkey,
     args: CancelOrderArgs,
 ) -> Instruction {
@@ -756,7 +794,7 @@ pub fn cancel_perp_order(
         event_queue: *event_queue,
         bids: *bids,
         asks: *asks,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::CancelPerpOrder { _args: args };
@@ -774,7 +812,7 @@ pub fn settle_perp_funds(
     sub_account: &Pubkey,
     market: &Pubkey,
     open_orders: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
     authority: &Pubkey,
 ) -> Instruction {
     let accounts = SettlePerpFunds {
@@ -784,7 +822,7 @@ pub fn settle_perp_funds(
         sub_account: *sub_account,
         market: *market,
         open_orders: *open_orders,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::SettlePerpFunds {};
@@ -801,12 +839,12 @@ pub fn new_spot_order(
     cache_account: &Pubkey,
     master_account: &Pubkey,
     sub_account: &Pubkey,
-    asset_pool: &Pubkey,
-    quote_pool: &Pubkey,
+    asset_pool_node: &Pubkey,
+    quote_pool_node: &Pubkey,
     asset_mint: &Pubkey,
-    quote_mint: &Pubkey,
     asset_vault: &Pubkey,
     quote_vault: &Pubkey,
+    vault_signer: &Pubkey,
     authority: &Pubkey,
     // dex accounts
     market: &Pubkey,
@@ -817,7 +855,7 @@ pub fn new_spot_order(
     asks: &Pubkey,
     coin_vault: &Pubkey,
     pc_vault: &Pubkey,
-    vault_signer: &Pubkey,
+    dex_vault_signer: &Pubkey,
     args: NewSpotOrderArgs,
 ) -> Instruction {
     let accounts = NewSpotOrder {
@@ -825,12 +863,12 @@ pub fn new_spot_order(
         cache_account: *cache_account,
         master_account: *master_account,
         sub_account: *sub_account,
-        asset_pool: *asset_pool,
-        quote_pool: *quote_pool,
+        asset_pool_node: *asset_pool_node,
+        quote_pool_node: *quote_pool_node,
         asset_mint: *asset_mint,
-        quote_mint: *quote_mint,
         asset_vault: *asset_vault,
         quote_vault: *quote_vault,
+        vault_signer: *vault_signer,
         authority: *authority,
         NewSpotOrderdex: NewSpotOrderDex {
             market: *market,
@@ -841,7 +879,7 @@ pub fn new_spot_order(
             asks: *asks,
             coin_vault: *coin_vault,
             pc_vault: *pc_vault,
-            vault_signer: *vault_signer,
+            vault_signer: *dex_vault_signer,
             rent: Rent::id(),
             token_program: token::ID,
             dex_program: anchor_spl::dex::ID,
@@ -861,10 +899,9 @@ pub fn cancel_spot_order(
     cache_account: &Pubkey,
     master_account: &Pubkey,
     sub_account: &Pubkey,
-    asset_pool: &Pubkey,
-    quote_pool: &Pubkey,
+    asset_pool_node: &Pubkey,
+    quote_pool_node: &Pubkey,
     asset_mint: &Pubkey,
-    quote_mint: &Pubkey,
     asset_vault: &Pubkey,
     quote_vault: &Pubkey,
     authority: &Pubkey,
@@ -876,7 +913,7 @@ pub fn cancel_spot_order(
     asks: &Pubkey,
     coin_vault: &Pubkey,
     pc_vault: &Pubkey,
-    vault_signer: &Pubkey,
+    dex_vault_signer: &Pubkey,
     args: CancelOrderArgs,
 ) -> Instruction {
     let accounts = CancelSpotOrder {
@@ -884,10 +921,9 @@ pub fn cancel_spot_order(
         cache_account: *cache_account,
         master_account: *master_account,
         sub_account: *sub_account,
-        asset_pool: *asset_pool,
-        quote_pool: *quote_pool,
+        asset_pool_node: *asset_pool_node,
+        quote_pool_node: *quote_pool_node,
         asset_mint: *asset_mint,
-        quote_mint: *quote_mint,
         asset_vault: *asset_vault,
         quote_vault: *quote_vault,
         authority: *authority,
@@ -899,7 +935,7 @@ pub fn cancel_spot_order(
             asks: *asks,
             coin_vault: *coin_vault,
             pc_vault: *pc_vault,
-            vault_signer: *vault_signer,
+            vault_signer: *dex_vault_signer,
             token_program: token::ID,
             dex_program: anchor_spl::dex::ID,
         },
@@ -918,10 +954,9 @@ pub fn settle_spot_funds(
     cache_account: &Pubkey,
     master_account: &Pubkey,
     sub_account: &Pubkey,
-    asset_pool: &Pubkey,
-    quote_pool: &Pubkey,
+    asset_pool_node: &Pubkey,
+    quote_pool_node: &Pubkey,
     asset_mint: &Pubkey,
-    quote_mint: &Pubkey,
     asset_vault: &Pubkey,
     quote_vault: &Pubkey,
     authority: &Pubkey,
@@ -930,7 +965,7 @@ pub fn settle_spot_funds(
     open_orders: &Pubkey,
     coin_vault: &Pubkey,
     pc_vault: &Pubkey,
-    vault_signer: &Pubkey,
+    dex_vault_signer: &Pubkey,
     args: CancelOrderArgs,
 ) -> Instruction {
     let accounts = SettleSpotFunds {
@@ -938,10 +973,9 @@ pub fn settle_spot_funds(
         cache_account: *cache_account,
         master_account: *master_account,
         sub_account: *sub_account,
-        asset_pool: *asset_pool,
-        quote_pool: *quote_pool,
+        asset_pool_node: *asset_pool_node,
+        quote_pool_node: *quote_pool_node,
         asset_mint: *asset_mint,
-        quote_mint: *quote_mint,
         asset_vault: *asset_vault,
         quote_vault: *quote_vault,
         authority: *authority,
@@ -950,7 +984,7 @@ pub fn settle_spot_funds(
             open_orders: *open_orders,
             coin_vault: *coin_vault,
             pc_vault: *pc_vault,
-            vault_signer: *vault_signer,
+            vault_signer: *dex_vault_signer,
             token_program: token::ID,
             dex_program: anchor_spl::dex::ID,
         },
@@ -963,8 +997,11 @@ pub fn settle_spot_funds(
     }
 }
 
-pub fn update_token_index(pool: &Pubkey) -> Instruction {
-    let accounts = UpdateTokenIndex { pool: *pool };
+pub fn update_token_index(cache_account: &Pubkey, pool: &Pubkey) -> Instruction {
+    let accounts = UpdateTokenIndex {
+        cache_account: *cache_account,
+        pool: *pool,
+    };
     let ix_data = crate::instruction::UpdateTokenIndex {};
     Instruction {
         program_id: crate::id(),
@@ -1077,7 +1114,7 @@ pub fn transfer_between_sub_accounts(
     from_sub_account: &Pubkey,
     to_sub_account: &Pubkey,
     asset_mint: &Pubkey,
-    asset_pool: &Pubkey,
+    asset_pool_node: &Pubkey,
     authority: &Pubkey,
     amount: u64,
 ) -> Instruction {
@@ -1088,7 +1125,7 @@ pub fn transfer_between_sub_accounts(
         from_sub_account: *from_sub_account,
         to_sub_account: *to_sub_account,
         asset_mint: *asset_mint,
-        asset_pool: *asset_pool,
+        asset_pool_node: *asset_pool_node,
         authority: *authority,
     };
     let ix_data = crate::instruction::TransferBetweenSubAccounts { _amount: amount };
@@ -1102,6 +1139,7 @@ pub fn transfer_between_sub_accounts(
 pub fn deposit_deliverable(
     market: &Pubkey,
     pool: &Pubkey,
+    pool_node: &Pubkey,
     token_mint: &Pubkey,
     token_vault: &Pubkey,
     source_token_account: &Pubkey,
@@ -1111,6 +1149,7 @@ pub fn deposit_deliverable(
     let accounts = DepositDeliverable {
         market: *market,
         pool: *pool,
+        pool_node: *pool_node,
         token_mint: *token_mint,
         token_vault: *token_vault,
         source_token_account: *source_token_account,
@@ -1130,14 +1169,14 @@ pub fn settle_position(
     master_account: &Pubkey,
     sub_account: &Pubkey,
     market: &Pubkey,
-    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
 ) -> Instruction {
     let accounts = SettlePosition {
         cache_account: *cache_account,
         master_account: *master_account,
         sub_account: *sub_account,
         market: *market,
-        quote_pool: *quote_pool,
+        quote_pool_node: *quote_pool_node,
     };
     let ix_data = crate::instruction::SettlePosition {};
     Instruction {
@@ -1152,18 +1191,16 @@ pub fn settle_position_with_delivery(
     master_account: &Pubkey,
     sub_account: &Pubkey,
     market: &Pubkey,
-    quote_pool: &Pubkey,
-    underlying_mint: &Pubkey,
-    underlying_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
+    underlying_pool_node: &Pubkey,
 ) -> Instruction {
     let accounts = SettlePositionWithDelivery {
         cache_account: *cache_account,
         master_account: *master_account,
         sub_account: *sub_account,
         market: *market,
-        quote_pool: *quote_pool,
-        underlying_mint: *underlying_mint,
-        underlying_pool: *underlying_pool,
+        quote_pool_node: *quote_pool_node,
+        underlying_pool_node: *underlying_pool_node,
     };
     let ix_data = crate::instruction::SettlePositionWithDelivery {};
     Instruction {
@@ -1175,17 +1212,17 @@ pub fn settle_position_with_delivery(
 
 pub fn claim_ido_proceeds(
     market: &Pubkey,
-    token_mint: &Pubkey,
-    token_pool: &Pubkey,
-    token_vault: &Pubkey,
+    quote_pool_node: &Pubkey,
+    quote_vault: &Pubkey,
+    vault_signer: &Pubkey,
     ido_authority: &Pubkey,
     destination_token_account: &Pubkey,
 ) -> Instruction {
     let accounts = ClaimIdoProceeds {
         market: *market,
-        token_mint: *token_mint,
-        token_pool: *token_pool,
-        token_vault: *token_vault,
+        quote_pool_node: *quote_pool_node,
+        quote_vault: *quote_vault,
+        vault_signer: *vault_signer,
         destination_token_account: *destination_token_account,
         ido_authority: *ido_authority,
         token_program: token::ID,
@@ -1224,21 +1261,46 @@ pub fn roll_market_expiry(
 pub fn close_pool(
     pool: &Pubkey,
     oracle_products: &Pubkey,
-    token_mint: &Pubkey,
-    token_vault: &Pubkey,
     rent_destination: &Pubkey,
+    vault_signer: &Pubkey,
     authority: &Pubkey,
 ) -> Instruction {
     let accounts = ClosePool {
         pool: *pool,
         oracle_products: *oracle_products,
-        token_mint: *token_mint,
-        token_vault: *token_vault,
+        vault_signer: *vault_signer,
         rent_destination: *rent_destination,
         authority: *authority,
         token_program: token::ID,
     };
     let ix_data = crate::instruction::ClosePool {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn close_pool_node(
+    pool: &Pubkey,
+    pool_node: &Pubkey,
+    token_mint: &Pubkey,
+    token_vault: &Pubkey,
+    vault_signer: &Pubkey,
+    rent_destination: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = ClosePoolNode {
+        pool: *pool,
+        pool_node: *pool_node,
+        token_mint: *token_mint,
+        token_vault: *token_vault,
+        vault_signer: *vault_signer,
+        rent_destination: *rent_destination,
+        authority: *authority,
+        token_program: token::ID,
+    };
+    let ix_data = crate::instruction::ClosePoolNode {};
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

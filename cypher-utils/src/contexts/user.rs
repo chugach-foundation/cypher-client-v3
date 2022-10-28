@@ -7,7 +7,7 @@ use cypher_client::{
 use solana_sdk::{instruction::Instruction, signature::Signature};
 use {
     cypher_client::{
-        instructions::{create_account, create_subaccount, withdraw_funds},
+        instructions::{create_account, create_sub_account, withdraw_funds},
         utils::{derive_account_address, derive_sub_account_address},
         CypherAccount, CypherSubAccount,
     },
@@ -123,7 +123,7 @@ impl UserContext {
                 account_bump,
                 account_number,
             ),
-            create_subaccount(
+            create_sub_account(
                 &authority.pubkey(),
                 &authority.pubkey(),
                 &account,
@@ -231,7 +231,7 @@ impl UserContext {
         // the master account
         let (sub_account, sub_account_bump) =
             derive_sub_account_address(&signer.pubkey(), sub_account_number);
-        let ixs = vec![create_subaccount(
+        let ixs = vec![create_sub_account(
             &signer.pubkey(),
             &signer.pubkey(),
             &self.account_ctx.address,

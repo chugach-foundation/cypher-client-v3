@@ -8,6 +8,7 @@ use anchor_lang::prelude::*;
 use bonfida_utils::fp_math::fp32_mul;
 use constants::{INV_ONE_HUNDRED_FIXED, QUOTE_TOKEN_IDX};
 use fixed::types::I80F48;
+use utils::adjust_decimals;
 
 anchor_gen::generate_cpi_interface!(
     idl_path = "idl.json",
@@ -28,6 +29,8 @@ anchor_gen::generate_cpi_interface!(
         PerpetualMarket,
         MarketConfig,
         Pool,
+        PoolNode,
+        NodeInfo,
         PoolConfig,
         OpenOrder,
         OrdersAccount,
@@ -471,14 +474,8 @@ impl CypherSubAccount {
         cache_account: &CacheAccount,
         mcr_type: MarginCollateralRatioType,
     ) -> I80F48 {
-        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
-        let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
-        let quote_position_size = quote_position.total_position(quote_cache);
-        let mut assets_value = if quote_position_size.is_positive() {
-            quote_position_size
-        } else {
-            I80F48::ZERO
-        };
+        let mut assets_value = I80F48::ZERO;
+        let mut cum_pc_total: u64 = 0;
 
         for position in self.positions.iter() {
             // spot
@@ -486,7 +483,7 @@ impl CypherSubAccount {
                 // get the relevant price cache
                 let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
                 // convert oracle price to fixed type
-                let spot_oracle_price = I80F48::from(cache.oracle_price);
+                let spot_oracle_price = I80F48::from_bits(cache.oracle_price);
                 // get asset weight according to margin collateral ratio type
                 let spot_asset_weight = match mcr_type {
                     MarginCollateralRatioType::Initialization => cache.spot_init_asset_weight(),
@@ -497,24 +494,35 @@ impl CypherSubAccount {
                     let spot_position_size = spot_position
                         .checked_add(I80F48::from(position.spot.open_orders_cache.coin_total))
                         .unwrap();
-                    assets_value += spot_position_size
+                    let spot_value = adjust_decimals(spot_position_size, cache.decimals)
                         .checked_mul(spot_oracle_price)
                         .and_then(|n| n.checked_mul(spot_asset_weight))
                         .unwrap();
+                    assets_value += spot_value;
                 }
-                assets_value += I80F48::from(position.spot.open_orders_cache.pc_total);
+                cum_pc_total += position.spot.open_orders_cache.pc_total;
             }
 
             // derivatives
             if position.derivative.market != Pubkey::default() {
                 // get the relevant price cache
                 let cache = cache_account.get_price_cache(position.derivative.cache_index as usize);
+                let decimals = if position.derivative.market_type == MarketType::PerpetualFuture {
+                    cache.perp_decimals
+                } else {
+                    cache.futures_decimals
+                };
                 // convert the orresponding price to fixed type
                 let derivative_price =
                     if position.derivative.market_type == MarketType::PerpetualFuture {
-                        I80F48::from(cache.oracle_price)
+                        I80F48::from_bits(cache.oracle_price)
                     } else {
-                        I80F48::from(cache.market_price)
+                        let market_price = I80F48::from_bits(cache.market_price);
+                        if market_price == I80F48::ZERO {
+                            I80F48::from_bits(cache.oracle_price)
+                        } else {
+                            market_price
+                        }
                     };
                 // get asset weight according to margin collateral ratio type
                 let derivative_asset_weight = match (mcr_type, position.derivative.market_type) {
@@ -551,14 +559,22 @@ impl CypherSubAccount {
                             position.derivative.open_orders_cache.coin_total,
                         ))
                         .unwrap();
-                    assets_value += derivative_position_size
+                    let derivative_value = adjust_decimals(derivative_position_size, decimals)
                         .checked_mul(derivative_price)
                         .and_then(|n| n.checked_mul(derivative_asset_weight))
                         .unwrap();
+                    assets_value += derivative_value;
                 }
                 assets_value += I80F48::from(position.derivative.open_orders_cache.pc_total);
             }
         }
+
+        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
+        let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
+
+        assets_value += adjust_decimals(I80F48::from(cum_pc_total), quote_cache.decimals)
+            .checked_mul(I80F48::from_bits(quote_cache.oracle_price))
+            .unwrap();
 
         assets_value
     }
@@ -584,7 +600,7 @@ impl CypherSubAccount {
                 // get the relevant price cache
                 let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
                 // convert oracle price to fixed type
-                let spot_oracle_price = I80F48::from(cache.oracle_price);
+                let spot_oracle_price = I80F48::from_bits(cache.oracle_price);
                 // get liability weight according to margin collateral ratio type
                 let spot_liability_weight = match mcr_type {
                     MarginCollateralRatioType::Initialization => cache.spot_init_liab_weight(),
@@ -593,23 +609,34 @@ impl CypherSubAccount {
                 // get total spot position value according to index
                 let spot_position = position.spot.total_position(cache);
                 if spot_position.is_negative() {
-                    liabilities_value += spot_position
+                    let spot_value = adjust_decimals(spot_position, cache.decimals)
                         .abs()
                         .checked_mul(spot_oracle_price)
                         .and_then(|n| n.checked_mul(spot_liability_weight))
                         .unwrap();
+                    liabilities_value += spot_value
                 }
             }
             // derivatives
             if position.derivative.market != Pubkey::default() {
                 // get the relevant price cache
                 let cache = cache_account.get_price_cache(position.derivative.cache_index as usize);
+                let decimals = if position.derivative.market_type == MarketType::PerpetualFuture {
+                    cache.perp_decimals
+                } else {
+                    cache.futures_decimals
+                };
                 // convert the orresponding price to fixed type
                 let derivative_price =
                     if position.derivative.market_type == MarketType::PerpetualFuture {
-                        I80F48::from(cache.oracle_price)
+                        I80F48::from_bits(cache.oracle_price)
                     } else {
-                        I80F48::from(cache.market_price)
+                        let market_price = I80F48::from_bits(cache.market_price);
+                        if market_price == I80F48::ZERO {
+                            I80F48::from_bits(cache.oracle_price)
+                        } else {
+                            market_price
+                        }
                     };
 
                 // get liability weight according to margin collateral ratio type
@@ -643,11 +670,12 @@ impl CypherSubAccount {
                 };
                 let derivative_position = position.derivative.base_position();
                 if derivative_position.is_negative() {
-                    liabilities_value += derivative_position
+                    let derivative_value = adjust_decimals(derivative_position, decimals)
                         .abs()
                         .checked_mul(derivative_price)
                         .and_then(|n| n.checked_mul(derivative_liability_weight))
                         .unwrap();
+                    liabilities_value += derivative_value;
                 }
             }
         }

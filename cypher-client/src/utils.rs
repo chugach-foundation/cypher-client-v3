@@ -9,8 +9,46 @@ use {
 
 use crate::{constants::*, ClearingType};
 
+pub fn adjust_decimals(value: I80F48, decimals: u8) -> I80F48 {
+    match decimals {
+        0 => value,
+        1 => value.checked_mul(INV_ONE_DECIMAL_ADJ_FIXED).unwrap(),
+        2 => value.checked_mul(INV_TWO_DECIMAL_ADJ_FIXED).unwrap(),
+        3 => value.checked_mul(INV_THREE_DECIMAL_ADJ_FIXED).unwrap(),
+        4 => value.checked_mul(INV_FOUR_DECIMAL_ADJ_FIXED).unwrap(),
+        5 => value.checked_mul(INV_FIVE_DECIMAL_ADJ_FIXED).unwrap(),
+        6 => value.checked_mul(INV_SIX_DECIMAL_ADJ_FIXED).unwrap(),
+        7 => value.checked_mul(INV_SEVEN_DECIMAL_ADJ_FIXED).unwrap(),
+        8 => value.checked_mul(INV_EIGHT_DECIMAL_ADJ_FIXED).unwrap(),
+        9 => value.checked_mul(INV_NINE_DECIMAL_ADJ_FIXED).unwrap(),
+        _ => unreachable!(),
+    }
+}
+
+pub fn convert_price_to_lots(
+    price: u64,
+    base_multiplier: u64,
+    coin_decimals_factor: u64,
+    quote_multiplier: u64,
+) -> u64 {
+    (price * base_multiplier) / (coin_decimals_factor * quote_multiplier)
+}
+
 pub fn fixed_to_ui(number: I80F48, decimals: u8) -> I80F48 {
     number / I80F48::from_num::<u64>(10_u64.checked_pow(decimals as u32).unwrap())
+}
+
+pub fn fixed_to_ui_price(number: I80F48, base_decimals: u8, quote_decimals: u8) -> I80F48 {
+    number
+        .checked_mul(I80F48::from_num::<u64>(
+            10_u64.checked_pow(base_decimals as u32).unwrap(),
+        ))
+        .and_then(|n| {
+            n.checked_div(I80F48::from_num::<u64>(
+                10_u64.checked_pow(quote_decimals as u32).unwrap(),
+            ))
+        })
+        .unwrap()
 }
 
 pub fn native_to_ui(number: u64, decimals: u8) -> u64 {
@@ -126,9 +164,31 @@ pub fn derive_pool_address(pool_name: &[u8]) -> (Pubkey, u8) {
     (address, bump)
 }
 
-pub fn derive_pool_vault_address(pool: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_pool_node_address(pool: &Pubkey, node_number: u8) -> (Pubkey, u8) {
+    let (address, bump) = Pubkey::find_program_address(
+        &[
+            B_POOL_NODE,
+            pool.as_ref(),
+            node_number.to_le_bytes().as_ref(),
+        ],
+        &crate::id(),
+    );
+
+    (address, bump)
+}
+
+pub fn derive_pool_node_vault_address(pool_node: &Pubkey) -> (Pubkey, u8) {
     let (address, bump) =
-        Pubkey::find_program_address(&[B_POOL_VAULT, pool.as_ref()], &crate::id());
+        Pubkey::find_program_address(&[B_POOL_NODE_VAULT, pool_node.as_ref()], &crate::id());
+
+    (address, bump)
+}
+
+pub fn derive_pool_node_vault_signer_address(pool_node: &Pubkey) -> (Pubkey, u8) {
+    let (address, bump) = Pubkey::find_program_address(
+        &[B_POOL_NODE_VAULT_SIGNER, pool_node.as_ref()],
+        &crate::id(),
+    );
 
     (address, bump)
 }

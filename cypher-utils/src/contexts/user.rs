@@ -1,7 +1,9 @@
 use anchor_spl::token::{spl_token, TokenAccount};
 use cypher_client::{
     instructions::deposit_funds,
-    utils::{derive_pool_vault_address, derive_token_address},
+    utils::{
+        derive_pool_node_vault_address, derive_pool_node_vault_signer_address, derive_token_address,
+    },
     wrapped_sol, PositionSlot,
 };
 use solana_sdk::{instruction::Instruction, signature::Signature};
@@ -263,6 +265,7 @@ impl UserContext {
         signer: &Keypair,
         cache_account: &Pubkey,
         pool: &Pubkey,
+        pool_node: &Pubkey,
         token_mint: &Pubkey,
         amount: u64,
     ) -> Result<Signature, ContextError> {
@@ -277,7 +280,7 @@ impl UserContext {
         };
 
         let mut ixs: Vec<Instruction> = Vec::new();
-        let (pool_vault, _) = derive_pool_vault_address(pool);
+        let (pool_vault, _) = derive_pool_node_vault_address(pool_node);
 
         // We will simply assume that the user has an ATA for the given token mint if it is not the Wrapped SOL mint
         let (source_token_account, keypair) = if token_mint == &wrapped_sol::ID {
@@ -311,6 +314,7 @@ impl UserContext {
             &self.account_ctx.address,
             &sub_account.address,
             pool,
+            pool_node,
             &source_token_account,
             &pool_vault,
             token_mint,
@@ -368,6 +372,7 @@ impl UserContext {
         signer: &Keypair,
         cache_account: &Pubkey,
         pool: &Pubkey,
+        pool_node: &Pubkey,
         token_mint: &Pubkey,
         amount: u64,
     ) -> Result<Signature, ContextError> {
@@ -382,7 +387,8 @@ impl UserContext {
         };
 
         let mut ixs: Vec<Instruction> = Vec::new();
-        let (pool_vault, _) = derive_pool_vault_address(pool);
+        let (pool_vault, _) = derive_pool_node_vault_address(pool_node);
+        let (vault_signer, _) = derive_pool_node_vault_signer_address(pool_node);
 
         // We will simply assume that the user has an ATA for the given token mint if it is not the Wrapped SOL mint
         let (destination_token_account, keypair) = if token_mint == &wrapped_sol::ID {
@@ -416,8 +422,10 @@ impl UserContext {
             &self.account_ctx.address,
             &sub_account.address,
             pool,
+            pool_node,
             &destination_token_account,
             &pool_vault,
+            &vault_signer,
             token_mint,
             &self.authority,
             amount,

@@ -997,11 +997,21 @@ pub fn settle_spot_funds(
     }
 }
 
-pub fn update_token_index(cache_account: &Pubkey, pool: &Pubkey) -> Instruction {
-    let accounts = UpdateTokenIndex {
+pub fn update_token_index(
+    cache_account: &Pubkey,
+    pool: &Pubkey,
+    pool_nodes: &[Pubkey],
+) -> Instruction {
+    let mut accounts = UpdateTokenIndex {
         cache_account: *cache_account,
         pool: *pool,
-    };
+    }
+    .to_account_metas(Some(false));
+    accounts.extend(
+        pool_nodes
+            .iter()
+            .map(|n| AccountMeta::new_readonly(*n, false)),
+    );
     let ix_data = crate::instruction::UpdateTokenIndex {};
     Instruction {
         program_id: crate::id(),

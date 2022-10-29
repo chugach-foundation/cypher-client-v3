@@ -89,7 +89,7 @@ pub mod dex {
 pub mod cache_account {
     use anchor_lang::declare_id;
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("146KULKKVzc7EXVhv7J5fshHSroTADCCnYRFQtSfHGi7");
+    declare_id!("5gBaJK2NVQ2EqELTYFQRVaKvU9UnHVo4Rtf1B6uGDk8t");
 }
 
 pub mod wrapped_sol {
@@ -432,12 +432,7 @@ impl CypherAccount {
     /// gets the c-ratio components for this account
     pub fn get_margin_c_ratio_components(&self) -> Vec<(I80F48, I80F48)> {
         self.sub_account_caches
-            .map(|c| {
-                (
-                    I80F48::from_bits(c.assets_value),
-                    I80F48::from_bits(c.liabilities_value),
-                )
-            })
+            .map(|c| (c.assets_value(), c.liabilities_value()))
             .to_vec()
     }
 }
@@ -493,7 +488,7 @@ impl CypherSubAccount {
                 // get the relevant price cache
                 let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
                 // convert oracle price to fixed type
-                let spot_oracle_price = I80F48::from_bits(cache.oracle_price);
+                let spot_oracle_price = cache.oracle_price();
                 // get asset weight according to margin collateral ratio type
                 let spot_asset_weight = match mcr_type {
                     MarginCollateralRatioType::Initialization => cache.spot_init_asset_weight(),
@@ -525,11 +520,11 @@ impl CypherSubAccount {
                 // convert the orresponding price to fixed type
                 let derivative_price =
                     if position.derivative.market_type == MarketType::PerpetualFuture {
-                        I80F48::from_bits(cache.oracle_price)
+                        cache.oracle_price()
                     } else {
-                        let market_price = I80F48::from_bits(cache.market_price);
+                        let market_price = cache.market_price();
                         if market_price == I80F48::ZERO {
-                            I80F48::from_bits(cache.oracle_price)
+                            cache.oracle_price()
                         } else {
                             market_price
                         }
@@ -610,7 +605,7 @@ impl CypherSubAccount {
                 // get the relevant price cache
                 let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
                 // convert oracle price to fixed type
-                let spot_oracle_price = I80F48::from_bits(cache.oracle_price);
+                let spot_oracle_price = cache.oracle_price();
                 // get liability weight according to margin collateral ratio type
                 let spot_liability_weight = match mcr_type {
                     MarginCollateralRatioType::Initialization => cache.spot_init_liab_weight(),
@@ -639,11 +634,11 @@ impl CypherSubAccount {
                 // convert the orresponding price to fixed type
                 let derivative_price =
                     if position.derivative.market_type == MarketType::PerpetualFuture {
-                        I80F48::from_bits(cache.oracle_price)
+                        cache.oracle_price()
                     } else {
-                        let market_price = I80F48::from_bits(cache.market_price);
+                        let market_price = cache.market_price();
                         if market_price == I80F48::ZERO {
-                            I80F48::from_bits(cache.oracle_price)
+                            cache.oracle_price()
                         } else {
                             market_price
                         }

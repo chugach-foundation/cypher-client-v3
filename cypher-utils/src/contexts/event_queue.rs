@@ -4,6 +4,7 @@ use cypher_client::{
     aob::{parse_aob_event_queue, CallBackInfo},
     serum::{parse_dex_event_queue, remove_dex_account_padding},
 };
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -40,6 +41,34 @@ impl AgnosticEventQueueContext {
             events: RwLock::new(events),
             callbacks: RwLock::new(callbacks),
         }
+    }
+
+    /// Loads the [`AgnosticEventQueueContext`].
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if something goes wrong during the RPC request
+    /// or the [`Pubkey`]s given are not valid AOB Event Queue Accounts.
+    pub async fn load(
+        rpc_client: &Arc<RpcClient>,
+        market: &Pubkey,
+        event_queue: &Pubkey,
+    ) -> Result<Self, ContextError> {
+        let account_data = match rpc_client.get_account_data(event_queue).await {
+            Ok(a) => a,
+            Err(e) => {
+                return Err(ContextError::ClientError(e));
+            }
+        };
+        let (eq_header, fills, callbacks) = parse_aob_event_queue(&account_data);
+        Ok(Self::new(
+            market,
+            event_queue,
+            eq_header.count,
+            eq_header.head,
+            fills.to_vec(),
+            callbacks.to_vec(),
+        ))
     }
 
     /// Loads the [`AgnosticEventQueueContext`] from the given account data.
@@ -169,6 +198,35 @@ impl SerumEventQueueContext {
             head: RwLock::new(head),
             events: RwLock::new(events),
         }
+    }
+
+    /// Loads the [`SerumEventQueueContext`].
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if something goes wrong during the RPC request
+    /// or the [`Pubkey`]s given are not valid Serum Event Queue Accounts.
+    pub async fn load(
+        rpc_client: &Arc<RpcClient>,
+        market: &Pubkey,
+        event_queue: &Pubkey,
+    ) -> Result<Self, ContextError> {
+        let account_data = match rpc_client.get_account_data(event_queue).await {
+            Ok(a) => a,
+            Err(e) => {
+                return Err(ContextError::ClientError(e));
+            }
+        };
+        let data_words = remove_dex_account_padding(&account_data);
+        let (header, seg0, seg1) = parse_dex_event_queue(&data_words);
+
+        Ok(Self::new(
+            market,
+            event_queue,
+            header.count(),
+            header.head(),
+            [seg0, seg1].concat(),
+        ))
     }
 
     /// Loads the [`SerumEventQueueContext`] from the given account data.

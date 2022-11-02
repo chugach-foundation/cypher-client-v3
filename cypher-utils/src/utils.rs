@@ -33,6 +33,16 @@ pub enum KeypairError {
     Load,
 }
 
+#[inline(always)]
+pub fn convert_price_to_lots(
+    price: u64,
+    base_multiplier: u64,
+    coin_decimals_factor: u64,
+    quote_multiplier: u64,
+) -> u64 {
+    (price * base_multiplier) / (coin_decimals_factor * quote_multiplier)
+}
+
 /// Encodes a string into an array of bytes fixed with 32 length.
 #[inline(always)]
 pub fn encode_string(alias: &str) -> [u8; 32] {

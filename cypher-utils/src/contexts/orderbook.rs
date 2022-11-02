@@ -9,6 +9,7 @@ use cypher_client::{
     serum::Slab,
     Market, Side,
 };
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -124,7 +125,7 @@ impl OrderBook {
     }
 }
 
-/// Represents an AOB [OrderBook].
+/// Represents an AOB [`OrderBook`].
 pub struct AgnosticOrderBookContext {
     pub market: Pubkey,
     pub bids: Pubkey,
@@ -141,6 +142,53 @@ impl AgnosticOrderBookContext {
             asks: *asks,
             state: RwLock::new(state),
         }
+    }
+
+    /// Loads the [`AgnosticOrderBookContext`].
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if something goes wrong during the RPC request
+    /// or the [`Pubkey`]s given are not valid AOB Slab Accounts.
+    pub async fn load(
+        rpc_client: &Arc<RpcClient>,
+        market_state: &dyn Market,
+        market: &Pubkey,
+        bids: &Pubkey,
+        asks: &Pubkey,
+    ) -> Result<Self, ContextError> {
+        let accounts = match rpc_client.get_multiple_accounts(&[*bids, *asks]).await {
+            Ok(a) => a,
+            Err(e) => {
+                return Err(ContextError::ClientError(e));
+            }
+        };
+
+        let bids_account = if accounts[0].is_some() {
+            accounts[0].as_ref().unwrap()
+        } else {
+            return Err(ContextError::MissingAccountState);
+        };
+        let mut bids_data = bids_account.data.clone();
+        let bids_state: AobSlab<CallBackInfo> = load_book_side(&mut bids_data, AccountTag::Bids);
+
+        let asks_account = if accounts[1].is_some() {
+            accounts[1].as_ref().unwrap()
+        } else {
+            return Err(ContextError::MissingAccountState);
+        };
+        let mut asks_data = asks_account.data.clone();
+        let asks_state: AobSlab<CallBackInfo> = load_book_side(&mut asks_data, AccountTag::Asks);
+
+        let bid_orders = get_aob_orders(market_state, bids_state, Side::Bid);
+        let ask_orders = get_aob_orders(market_state, asks_state, Side::Ask);
+
+        Ok(Self::new(
+            market,
+            bids,
+            asks,
+            OrderBook::new(bid_orders, ask_orders),
+        ))
     }
 
     /// Loads the [`AgnosticOrderBookContext`] from the given [`AccountsCache`], if the given Market's
@@ -275,6 +323,55 @@ impl SerumOrderBookContext {
             asks: *asks,
             state: RwLock::new(state),
         }
+    }
+
+    /// Loads the [`SerumOrderBookContext`].
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if something goes wrong during the RPC request
+    /// or the [`Pubkey`]s given are not valid Serum Slab Accounts.
+    pub async fn load(
+        rpc_client: &Arc<RpcClient>,
+        market_state: &MarketState,
+        market: &Pubkey,
+        bids: &Pubkey,
+        asks: &Pubkey,
+    ) -> Result<Self, ContextError> {
+        let accounts = match rpc_client.get_multiple_accounts(&[*bids, *asks]).await {
+            Ok(a) => a,
+            Err(e) => {
+                return Err(ContextError::ClientError(e));
+            }
+        };
+
+        let bids_account = if accounts[0].is_some() {
+            accounts[0].as_ref().unwrap()
+        } else {
+            return Err(ContextError::MissingAccountState);
+        };
+        let (_bid_head, bid_data, _bid_tail) = array_refs![&bids_account.data, 5; ..; 7];
+        let bid_data = &mut bid_data[8..].to_vec().clone();
+        let bids_state = Slab::new(bid_data);
+
+        let asks_account = if accounts[1].is_some() {
+            accounts[1].as_ref().unwrap()
+        } else {
+            return Err(ContextError::MissingAccountState);
+        };
+        let (_ask_head, ask_data, _ask_tai) = array_refs![&asks_account.data, 5; ..; 7];
+        let ask_data = &mut ask_data[8..].to_vec().clone();
+        let asks_state = Slab::new(ask_data);
+
+        let bid_orders = get_serum_orders(market_state, bids_state, Side::Bid);
+        let ask_orders = get_serum_orders(market_state, asks_state, Side::Ask);
+
+        Ok(Self::new(
+            market,
+            bids,
+            asks,
+            OrderBook::new(bid_orders, ask_orders),
+        ))
     }
 
     /// Loads the [`SerumOrderBookContext`] from the given [`AccountsCache`], if the given Market's

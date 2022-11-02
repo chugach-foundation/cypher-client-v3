@@ -322,15 +322,7 @@ pub async fn send_transaction(
     };
     match submit_res {
         Ok(s) => Ok(s),
-        Err(e) => {
-            warn!(
-                "There was an error submitting transaction: {}",
-                e.to_string()
-            );
-            let err = e.get_transaction_error().unwrap();
-            warn!("Error: {}", err.to_string());
-            Err(e)
-        }
+        Err(e) => Err(e),
     }
 }
 

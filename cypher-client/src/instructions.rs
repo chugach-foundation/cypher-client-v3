@@ -1,5 +1,5 @@
 use anchor_lang::{
-    prelude::{AccountMeta, Pubkey, Rent},
+    prelude::{AccountMeta, ProgramError, Pubkey, Rent},
     solana_program::{instruction::Instruction, sysvar::SysvarId},
     system_program, InstructionData, ToAccountMetas,
 };
@@ -460,6 +460,8 @@ pub fn init_spot_open_orders(
     }
 }
 
+/// This instruction should only receive either a pool pubkey or a futures market pubkey.
+/// It should never receive both pubkeys.
 pub fn cache_oracle_prices(
     cache_account: &Pubkey,
     oracle_products: &Pubkey,
@@ -467,7 +469,7 @@ pub fn cache_oracle_prices(
     cache_index: u64,
     pool: &Option<Pubkey>,
     futures_market: &Option<Pubkey>,
-) -> Instruction {
+) -> Result<Instruction, ProgramError> {
     let mut accounts = CacheOraclePrices {
         cache_account: *cache_account,
         oracle_products: *oracle_products,
@@ -478,6 +480,9 @@ pub fn cache_oracle_prices(
             .iter()
             .map(|p| AccountMeta::new_readonly(*p, false)),
     );
+    if pool.is_some() && futures_market.is_some() {
+        return Err(ProgramError::InvalidArgument);
+    }
     if pool.is_some() {
         accounts.push(AccountMeta::new_readonly(pool.unwrap(), false));
     }
@@ -487,11 +492,11 @@ pub fn cache_oracle_prices(
     let ix_data = crate::instruction::CacheOraclePrices {
         _cache_index: cache_index,
     };
-    Instruction {
+    Ok(Instruction {
         program_id: crate::id(),
         accounts,
         data: ix_data.data(),
-    }
+    })
 }
 
 pub fn close_spot_open_orders(

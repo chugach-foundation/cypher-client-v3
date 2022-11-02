@@ -570,7 +570,7 @@ impl CypherSubAccount {
                         .unwrap();
                     assets_value += derivative_value;
                 }
-                assets_value += I80F48::from(position.derivative.open_orders_cache.pc_total);
+                cum_pc_total += position.derivative.open_orders_cache.pc_total;
             }
         }
 

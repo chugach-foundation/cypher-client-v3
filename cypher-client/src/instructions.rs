@@ -464,7 +464,7 @@ pub fn cache_oracle_prices(
     cache_account: &Pubkey,
     oracle_products: &Pubkey,
     price_accounts: &[Pubkey],
-    cache_index: usize,
+    cache_index: u64,
     pool: &Option<Pubkey>,
     futures_market: &Option<Pubkey>,
 ) -> Instruction {

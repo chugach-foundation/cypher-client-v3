@@ -19,9 +19,7 @@
       "args": [
         {
           "name": "cacheIndex",
-          "type": {
-            "defined": "usize"
-          }
+          "type": "u64"
         }
       ]
     },

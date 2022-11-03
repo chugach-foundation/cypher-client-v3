@@ -4,7 +4,7 @@ use cypher_client::{
     utils::{
         derive_pool_node_vault_address, derive_pool_node_vault_signer_address, derive_token_address,
     },
-    wrapped_sol, PositionSlot,
+    wrapped_sol, DerivativePosition, PositionSlot, SpotPosition,
 };
 use solana_sdk::{instruction::Instruction, signature::Signature};
 use {
@@ -36,6 +36,46 @@ pub struct SubAccountContext {
 impl SubAccountContext {
     pub fn new(address: Pubkey, state: Box<CypherSubAccount>) -> Self {
         Self { address, state }
+    }
+
+    /// Gets the derivative position associated with the given identifier.
+    ///
+    /// The identifier should be the SPL Token Mint pubkey.
+    pub fn get_derivative_position(&self, identifier: &Pubkey) -> Option<&DerivativePosition> {
+        for slot in self.state.positions.iter() {
+            if slot.derivative.market == *identifier {
+                return Some(&slot.derivative);
+            }
+        }
+        None
+    }
+
+    /// Gets the spot position associated with the given identifier.
+    ///
+    /// The identifier should be the SPL Token Mint pubkey.
+    pub fn get_spot_position(&self, identifier: &Pubkey) -> Option<&SpotPosition> {
+        for slot in self.state.positions.iter() {
+            if slot.spot.token_mint == *identifier {
+                return Some(&slot.spot);
+            }
+        }
+        None
+    }
+
+    /// Gets the position associated with the given identifier.
+    ///
+    /// The identifier should be the SPL Token Mint pubkey for a spot position and the
+    /// [`PerpetualMarket`] or [`FuturesMarket`] pubkey for a derivative position.
+    pub fn get_position(&self, identifier: &Pubkey) -> Option<&PositionSlot> {
+        for slot in self.state.positions.iter() {
+            if slot.derivative.market == *identifier {
+                return Some(&slot);
+            }
+            if slot.spot.token_mint == *identifier {
+                return Some(&slot);
+            }
+        }
+        None
     }
 }
 

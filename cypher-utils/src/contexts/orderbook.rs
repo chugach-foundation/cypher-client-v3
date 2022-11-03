@@ -4,6 +4,7 @@ use agnostic_orderbook::state::{
 };
 use anchor_spl::dex::serum_dex::state::MarketState;
 use arrayref::array_refs;
+use async_trait::async_trait;
 use cypher_client::{
     aob::{load_book_side, CallBackInfo},
     serum::Slab,
@@ -18,7 +19,17 @@ use crate::accounts_cache::AccountsCache;
 
 use super::ContextError;
 
-/// Represents an order in an orderbook.
+/// A trait that can be used to generically get data for both AOB and Serum Order Books.
+#[async_trait]
+pub trait GenericOrderBook: Send {
+    /// Gets the bids on the book.
+    async fn get_bids(&self) -> Vec<Order>;
+
+    /// Gets the asks on the book.
+    async fn get_asks(&self) -> Vec<Order>;
+}
+
+/// Represents an order.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Order {
     /// The order side.
@@ -131,6 +142,19 @@ pub struct AgnosticOrderBookContext {
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub state: RwLock<OrderBook>,
+}
+
+#[async_trait]
+impl GenericOrderBook for AgnosticOrderBookContext {
+    async fn get_bids(&self) -> Vec<Order> {
+        let state = self.state.read().await;
+        state.bids.clone()
+    }
+
+    async fn get_asks(&self) -> Vec<Order> {
+        let state = self.state.read().await;
+        state.bids.clone()
+    }
 }
 
 impl AgnosticOrderBookContext {
@@ -304,6 +328,37 @@ impl AgnosticOrderBookContext {
 
         Ok(())
     }
+
+    /// Gets the native impact price for the given size and order side.
+    /// The returning value, if it exists, already represents the lot price.
+    ///
+    /// If not enough liquidity is available on the book to match the requested size,
+    /// this method returns none.
+    pub async fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
+        let mut cumulative_size = 0;
+        let mut impact_price = 0;
+
+        let state = self.state.read().await;
+
+        if side == Side::Ask {
+            for bid in state.bids.iter() {
+                impact_price = bid.price;
+                cumulative_size += bid.base_quantity;
+                if cumulative_size >= size {
+                    return Some(impact_price);
+                }
+            }
+        } else {
+            for ask in state.asks.iter() {
+                impact_price = ask.price;
+                cumulative_size += ask.base_quantity;
+                if cumulative_size >= size {
+                    return Some(impact_price);
+                }
+            }
+        }
+        None
+    }
 }
 
 /// Represents a Serum [OrderBook].
@@ -312,6 +367,19 @@ pub struct SerumOrderBookContext {
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub state: RwLock<OrderBook>,
+}
+
+#[async_trait]
+impl GenericOrderBook for SerumOrderBookContext {
+    async fn get_bids(&self) -> Vec<Order> {
+        let state = self.state.read().await;
+        state.bids.clone()
+    }
+
+    async fn get_asks(&self) -> Vec<Order> {
+        let state = self.state.read().await;
+        state.bids.clone()
+    }
 }
 
 impl SerumOrderBookContext {
@@ -487,5 +555,36 @@ impl SerumOrderBookContext {
         *state = OrderBook::new(bid_orders, ask_orders);
 
         Ok(())
+    }
+
+    /// Gets the native impact price for the given size and order side.
+    /// The returning value, if it exists, already represents the lot price.
+    ///
+    /// If not enough liquidity is available on the book to match the requested size,
+    /// this method returns none.
+    pub async fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
+        let mut cumulative_size = 0;
+        let mut impact_price = 0;
+
+        let state = self.state.read().await;
+
+        if side == Side::Ask {
+            for bid in state.bids.iter() {
+                impact_price = bid.price;
+                cumulative_size += bid.base_quantity;
+                if cumulative_size >= size {
+                    return Some(impact_price);
+                }
+            }
+        } else {
+            for ask in state.asks.iter() {
+                impact_price = ask.price;
+                cumulative_size += ask.base_quantity;
+                if cumulative_size >= size {
+                    return Some(impact_price);
+                }
+            }
+        }
+        None
     }
 }

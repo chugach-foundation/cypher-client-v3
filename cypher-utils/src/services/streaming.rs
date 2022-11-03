@@ -41,11 +41,11 @@ impl StreamingAccountInfoService {
         Self {
             cache: Arc::new(AccountsCache::default()),
             pubsub_client: Arc::new(
-                PubsubClient::new("wss://devnet.genesysgo.net")
+                PubsubClient::new("wss://api.devnet.solana.com")
                     .await
                     .unwrap(),
             ),
-            rpc_client: Arc::new(RpcClient::new("https://devnet.genesysgo.net".to_string())),
+            rpc_client: Arc::new(RpcClient::new("https://api.devnet.solana.com".to_string())),
             shutdown: RwLock::new(channel::<bool>(1).1),
             accounts: RwLock::new(Vec::new()),
             handlers: RwLock::new(Vec::new()),

@@ -1,9 +1,15 @@
-use agnostic_orderbook::state::event_queue::FillEvent;
-use anchor_spl::dex::serum_dex::state::{Event, QueueHeader};
+use agnostic_orderbook::state::{event_queue::FillEvent, Side as AobSide};
+use anchor_spl::dex::serum_dex::{
+    matching::Side as DexSide,
+    state::{Event, EventView, QueueHeader},
+};
+use async_trait::async_trait;
 use cypher_client::{
     aob::{parse_aob_event_queue, CallBackInfo},
     serum::{parse_dex_event_queue, remove_dex_account_padding},
+    Side,
 };
+use num_traits::cast::FromPrimitive;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
@@ -13,6 +19,30 @@ use crate::accounts_cache::AccountsCache;
 
 use super::ContextError;
 
+/// Represents an order fill.
+pub struct Fill {
+    /// The total base quantity.
+    pub base_quantity: u64,
+    /// The total quote quantity.
+    pub quote_quantity: u64,
+    /// The price.
+    pub price: u64,
+    /// The side of the taker order.
+    pub taker_side: Side,
+    /// The maker order id.
+    pub maker_order_id: u128,
+}
+
+/// A trait that can be used to generically get data for both AOB and Serum Event Queues.
+#[async_trait]
+pub trait GenericEventQueue {
+    /// Gets the fills in the Event Queue.
+    async fn get_fills(&self) -> Vec<Fill>;
+
+    /// Gets the fills in the Event Queue that have occurred since the given sequence number.
+    async fn get_fills_since(&self, seq: u64) -> Vec<Fill>;
+}
+
 /// Represents an AOB Event Queue.
 pub struct AgnosticEventQueueContext {
     pub market: Pubkey,
@@ -21,6 +51,57 @@ pub struct AgnosticEventQueueContext {
     pub head: RwLock<u64>,
     pub events: RwLock<Vec<FillEvent>>,
     pub callbacks: RwLock<Vec<CallBackInfo>>,
+}
+
+#[async_trait]
+impl GenericEventQueue for AgnosticEventQueueContext {
+    async fn get_fills(&self) -> Vec<Fill> {
+        let events = self.events.read().await;
+        let mut fills = Vec::new();
+
+        for event in events.iter() {
+            let aob_side = AobSide::from_u8(event.taker_side).unwrap();
+            let taker_side = if aob_side == AobSide::Ask {
+                Side::Ask
+            } else {
+                Side::Bid
+            };
+            fills.push(Fill {
+                base_quantity: event.base_size,
+                quote_quantity: event.quote_size,
+                price: event.quote_size / event.base_size,
+                taker_side,
+                maker_order_id: event.maker_order_id,
+            });
+        }
+
+        fills
+    }
+
+    async fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
+        let head = self.head.read().await;
+        let events = self.events.read().await;
+        let (sliced_events, _) = events.split_at(*head as usize);
+        let mut fills = Vec::new();
+
+        for event in sliced_events {
+            let aob_side = AobSide::from_u8(event.taker_side).unwrap();
+            let taker_side = if aob_side == AobSide::Ask {
+                Side::Ask
+            } else {
+                Side::Bid
+            };
+            fills.push(Fill {
+                base_quantity: event.base_size,
+                quote_quantity: event.quote_size,
+                price: event.quote_size / event.base_size,
+                taker_side,
+                maker_order_id: event.maker_order_id,
+            });
+        }
+
+        fills
+    }
 }
 
 impl AgnosticEventQueueContext {
@@ -180,6 +261,137 @@ pub struct SerumEventQueueContext {
     pub count: RwLock<u64>,
     pub head: RwLock<u64>,
     pub events: RwLock<Vec<Event>>,
+}
+
+#[async_trait]
+impl GenericEventQueue for SerumEventQueueContext {
+    async fn get_fills(&self) -> Vec<Fill> {
+        let events = self.events.read().await;
+        let mut fills = Vec::new();
+
+        for event in events.iter() {
+            let ev = match event.as_view() {
+                Ok(a) => {
+                    match a {
+                        EventView::Fill {
+                            side,
+                            maker,
+                            native_qty_paid,
+                            native_qty_received,
+                            native_fee_or_rebate,
+                            order_id,
+                            owner,
+                            owner_slot,
+                            fee_tier,
+                            client_order_id,
+                        } => {
+                            let taker_side = if maker {
+                                // is maker
+                                if side == DexSide::Ask {
+                                    Side::Bid
+                                } else {
+                                    Side::Ask
+                                }
+                            } else {
+                                // not maker
+                                if side == DexSide::Ask {
+                                    Side::Ask
+                                } else {
+                                    Side::Bid
+                                }
+                            };
+                            let base_quantity = if side == DexSide::Ask {
+                                native_qty_paid
+                            } else {
+                                native_qty_received
+                            };
+                            let quote_quantity = if side == DexSide::Ask {
+                                native_qty_received
+                            } else {
+                                native_qty_paid
+                            };
+                            fills.push(Fill {
+                                base_quantity,
+                                quote_quantity,
+                                price: quote_quantity / base_quantity,
+                                taker_side,
+                                maker_order_id: order_id,
+                            });
+                        }
+                        _ => continue,
+                    }
+                }
+                Err(e) => continue,
+            };
+        }
+
+        fills
+    }
+
+    async fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
+        let head = self.head.read().await;
+        let events = self.events.read().await;
+        let (sliced_events, _) = events.split_at(*head as usize);
+        let mut fills = Vec::new();
+
+        for event in sliced_events {
+            let ev = match event.as_view() {
+                Ok(a) => {
+                    match a {
+                        EventView::Fill {
+                            side,
+                            maker,
+                            native_qty_paid,
+                            native_qty_received,
+                            native_fee_or_rebate,
+                            order_id,
+                            owner,
+                            owner_slot,
+                            fee_tier,
+                            client_order_id,
+                        } => {
+                            let taker_side = if maker {
+                                // is maker
+                                if side == DexSide::Ask {
+                                    Side::Bid
+                                } else {
+                                    Side::Ask
+                                }
+                            } else {
+                                // not maker
+                                if side == DexSide::Ask {
+                                    Side::Ask
+                                } else {
+                                    Side::Bid
+                                }
+                            };
+                            let base_quantity = if side == DexSide::Ask {
+                                native_qty_received
+                            } else {
+                                native_qty_paid
+                            };
+                            let quote_quantity = if side == DexSide::Ask {
+                                native_qty_paid
+                            } else {
+                                native_qty_received
+                            };
+                            fills.push(Fill {
+                                base_quantity,
+                                quote_quantity,
+                                price: quote_quantity / base_quantity,
+                                taker_side,
+                                maker_order_id: order_id,
+                            });
+                        }
+                        _ => continue,
+                    }
+                }
+                Err(e) => continue,
+            };
+        }
+
+        fills
+    }
 }
 
 impl SerumEventQueueContext {

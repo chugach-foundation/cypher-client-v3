@@ -97,6 +97,15 @@ pub mod wrapped_sol {
     declare_id!("So11111111111111111111111111111111111111112");
 }
 
+impl ToString for Side {
+    fn to_string(&self) -> String {
+        match self {
+            Side::Bid => "Bid".to_string(),
+            Side::Ask => "Ask".to_string(),
+        }
+    }
+}
+
 impl PartialEq for SubAccountMargining {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -590,14 +599,7 @@ impl CypherSubAccount {
         cache_account: &CacheAccount,
         mcr_type: MarginCollateralRatioType,
     ) -> I80F48 {
-        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
-        let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
-        let quote_position_size = quote_position.total_position(quote_cache);
-        let mut liabilities_value = if quote_position_size.is_negative() {
-            quote_position_size.abs()
-        } else {
-            I80F48::ZERO
-        };
+        let mut liabilities_value = I80F48::ZERO;
 
         for position in self.positions.iter() {
             // spot
@@ -730,9 +732,55 @@ impl DerivativePosition {
     pub fn base_position(&self) -> I80F48 {
         I80F48::from_bits(self.base_position)
     }
+
+    /// gets the position size taking into account orders still locked in the open orders account
+    /// - regardless of whether the position is positive or negative we will add the amount of contracts
+    /// locked in the open orders due to ask orders
+    ///
+    /// this is because whenever an ask gets placed on the book,
+    /// the `spent_amount` is the number of contracts and
+    /// it gets subtracted to the position size as an accounting mechanism
+    pub fn total_position(&self) -> I80F48 {
+        let mut base_position = self.base_position();
+        // we need to add both potentially locked and free coins to the position
+        // locked coins are unmatched from ask orders, so they should be
+        base_position += I80F48::from(self.open_orders_cache.coin_total);
+        base_position
+    }
 }
 
 impl Pool {
+    /// the pool's utilization rate
+    pub fn utilization_rate(&self) -> I80F48 {
+        let borrows = self.borrows();
+        if borrows == I80F48::ZERO {
+            I80F48::ZERO
+        } else {
+            borrows.saturating_div(self.deposits())
+        }
+    }
+
+    /// the pool's optimal APR
+    pub fn optimal_apr(&self) -> I80F48 {
+        I80F48::from_num(self.config.optimal_apr)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// the pool's max APR
+    pub fn max_apr(&self) -> I80F48 {
+        I80F48::from_num(self.config.max_apr)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
+    /// the pool's optimal utilization rate
+    pub fn optimal_util(&self) -> I80F48 {
+        I80F48::from_num(self.config.optimal_util)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
+    }
+
     /// the deposits of this pool
     pub fn deposits(&self) -> I80F48 {
         I80F48::from_bits(self.deposits)
@@ -751,6 +799,32 @@ impl Pool {
     /// the borrows of this pool
     pub fn borrow_index(&self) -> I80F48 {
         I80F48::from_bits(self.borrow_index)
+    }
+
+    /// the pool's borrow interest rate
+    pub fn borrow_rate(&self) -> I80F48 {
+        let utilization = self.utilization_rate();
+        let optimal_apr = self.optimal_apr();
+        let max_apr = self.max_apr();
+        let optimal_util = self.optimal_util();
+
+        if utilization > optimal_util {
+            let extra_util = utilization - optimal_util;
+            let slope = (max_apr - optimal_apr)
+                .checked_div(I80F48::ONE - optimal_util)
+                .unwrap();
+            optimal_apr + (slope.checked_mul(extra_util).unwrap())
+        } else {
+            let slope = optimal_apr.checked_div(optimal_util).unwrap();
+            slope.checked_mul(utilization).unwrap()
+        }
+    }
+
+    /// the pool's deposit interest rate
+    pub fn deposit_rate(&self) -> I80F48 {
+        self.borrow_rate()
+            .saturating_mul(self.utilization_rate())
+            .saturating_div(I80F48::ONE)
     }
 }
 

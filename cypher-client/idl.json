@@ -6827,8 +6827,10 @@
           "index": false
         },
         {
-          "name": "isSpot",
-          "type": "bool",
+          "name": "side",
+          "type": {
+            "defined": "Side"
+          },
           "index": false
         }
       ]

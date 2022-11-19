@@ -288,8 +288,11 @@ pub async fn send_transactions(
                     "There was an error submitting transaction: {}",
                     e.to_string()
                 );
-                let err = e.get_transaction_error().unwrap();
-                warn!("Error: {}", err.to_string());
+                let tx_err = e.get_transaction_error();
+                if tx_err.is_some() {
+                    let err = tx_err.unwrap();
+                    warn!("Error: {}", err.to_string());
+                }
                 return Err(e);
             }
         }

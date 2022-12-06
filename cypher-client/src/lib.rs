@@ -4,7 +4,9 @@ pub mod instructions;
 pub mod serum;
 pub mod utils;
 
+use agnostic_orderbook::state::Side as AobSide;
 use anchor_lang::prelude::*;
+use anchor_spl::dex::serum_dex::matching::Side as DexSide;
 use bonfida_utils::fp_math::fp32_mul;
 use constants::{INV_ONE_HUNDRED_FIXED, QUOTE_TOKEN_IDX};
 use fixed::types::I80F48;
@@ -95,6 +97,24 @@ pub mod cache_account {
 pub mod wrapped_sol {
     use anchor_lang::declare_id;
     declare_id!("So11111111111111111111111111111111111111112");
+}
+
+impl From<DexSide> for Side {
+    fn from(side: DexSide) -> Self {
+        match side {
+            DexSide::Ask => Side::Ask,
+            DexSide::Bid => Side::Bid,
+        }
+    }
+}
+
+impl From<AobSide> for Side {
+    fn from(side: AobSide) -> Self {
+        match side {
+            AobSide::Ask => Side::Ask,
+            AobSide::Bid => Side::Bid,
+        }
+    }
 }
 
 impl ToString for Side {
@@ -299,6 +319,15 @@ impl Clearing {
 
     pub fn get_fee_tiers(&self) -> Vec<FeeTier> {
         self.fee_tiers.to_vec()
+    }
+
+    /// gets a fee tier by it's identifier, which can be found in a user's `CypherAccount`
+    pub fn get_fee_tier(&self, fee_tier: u8) -> FeeTier {
+        let ft = self.fee_tiers.iter().find(|ft| ft.tier == fee_tier);
+        match ft {
+            Some(ft) => *ft,
+            None => FeeTier::default(),
+        }
     }
 }
 
@@ -708,6 +737,10 @@ impl SubAccountCache {
     /// the value of the liabilities of this sub account
     pub fn liabilities_value(&self) -> I80F48 {
         I80F48::from_bits(self.liabilities_value)
+    }
+    /// the value of the cached c-ratio
+    pub fn c_ratio(&self) -> I80F48 {
+        I80F48::from_bits(self.c_ratio)
     }
 }
 

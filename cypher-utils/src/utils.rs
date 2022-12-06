@@ -1,4 +1,4 @@
-use anchor_client::anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator};
+use anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator, Owner, ZeroCopy};
 use log::warn;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
@@ -14,7 +14,6 @@ use thiserror::Error;
 use crate::transaction_builder::TransactionBuilder;
 
 use {
-    anchor_client::anchor_lang::{Owner, ZeroCopy},
     cypher_client::utils::get_zero_copy_account,
     solana_client::{client_error::ClientError, nonblocking::rpc_client::RpcClient},
     solana_sdk::{pubkey::Pubkey, signature::Keypair},
@@ -245,7 +244,12 @@ pub async fn send_transactions(
     let mut signatures: Vec<Signature> = Vec::new();
     let mut prev_tx: Transaction = Transaction::default();
 
-    let blockhash = rpc_client.get_latest_blockhash().await.unwrap();
+    let blockhash = match rpc_client.get_latest_blockhash().await {
+        Ok(h) => h,
+        Err(e) => {
+            return Err(e);
+        }
+    };
 
     for ix in ixs {
         if txn_builder.len() != 0 {

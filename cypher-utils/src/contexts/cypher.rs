@@ -4,7 +4,9 @@ use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::{ContextError, MarketContext, PoolContext, SpotMarketContext};
+use crate::accounts_cache::AccountsCache;
+
+use super::{CacheContext, ContextError, MarketContext, PoolContext, SpotMarketContext};
 
 /// Represents the Cypher ecosystem.
 ///
@@ -16,6 +18,7 @@ use super::{ContextError, MarketContext, PoolContext, SpotMarketContext};
 /// Consider loading all of the Pools and Markets once and then using the [`PubsubClient`]
 /// or even the [`StreamingAccountInfoService`] to subscribe to these accounts instead of polling.
 pub struct CypherContext {
+    pub cache: RwLock<CacheContext>,
     pub pools: RwLock<Vec<PoolContext>>,
     pub perp_markets: RwLock<Vec<MarketContext<PerpetualMarket>>>,
     pub futures_markets: RwLock<Vec<MarketContext<FuturesMarket>>>,
@@ -25,12 +28,14 @@ pub struct CypherContext {
 impl CypherContext {
     /// Creates a new [`CypherContext`].
     pub fn new(
+        cache: CacheContext,
         pools: Vec<PoolContext>,
         perp_markets: Vec<MarketContext<PerpetualMarket>>,
         futures_markets: Vec<MarketContext<FuturesMarket>>,
         spot_markets: Vec<SpotMarketContext>,
     ) -> Self {
         Self {
+            cache: RwLock::new(cache),
             pools: RwLock::new(pools),
             perp_markets: RwLock::new(perp_markets),
             futures_markets: RwLock::new(futures_markets),
@@ -44,6 +49,13 @@ impl CypherContext {
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn load(rpc_client: &Arc<RpcClient>) -> Result<Self, ContextError> {
+        let cache = match CacheContext::load(rpc_client).await {
+            Ok(c) => c,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+
         let pools = match PoolContext::load_all(rpc_client).await {
             Ok(pools) => pools,
             Err(e) => {
@@ -75,6 +87,7 @@ impl CypherContext {
                 }
             };
         Ok(Self::new(
+            cache,
             pools,
             perpetual_markets,
             futures_markets,
@@ -88,6 +101,13 @@ impl CypherContext {
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn load_pools(rpc_client: &Arc<RpcClient>) -> Result<Self, ContextError> {
+        let cache = match CacheContext::load(rpc_client).await {
+            Ok(c) => c,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+
         let pools = match PoolContext::load_all(rpc_client).await {
             Ok(pools) => pools,
             Err(e) => {
@@ -106,7 +126,13 @@ impl CypherContext {
                     return Err(e);
                 }
             };
-        Ok(Self::new(pools, Vec::new(), Vec::new(), spot_markets))
+        Ok(Self::new(
+            cache,
+            pools,
+            Vec::new(),
+            Vec::new(),
+            spot_markets,
+        ))
     }
 
     /// Loads the [`CypherContext`] with [`MarketContext<PerpetualMarket>`]s only.
@@ -115,8 +141,20 @@ impl CypherContext {
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn load_perpetual_markets(rpc_client: &Arc<RpcClient>) -> Result<Self, ContextError> {
+        let cache = match CacheContext::load(rpc_client).await {
+            Ok(c) => c,
+            Err(e) => {
+                return Err(e);
+            }
+        };
         match MarketContext::<PerpetualMarket>::load_all(rpc_client).await {
-            Ok(markets) => Ok(Self::new(Vec::new(), markets, Vec::new(), Vec::new())),
+            Ok(markets) => Ok(Self::new(
+                cache,
+                Vec::new(),
+                markets,
+                Vec::new(),
+                Vec::new(),
+            )),
             Err(e) => Err(e),
         }
     }
@@ -127,9 +165,54 @@ impl CypherContext {
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn load_futures_markets(rpc_client: &Arc<RpcClient>) -> Result<Self, ContextError> {
+        let cache = match CacheContext::load(rpc_client).await {
+            Ok(c) => c,
+            Err(e) => {
+                return Err(e);
+            }
+        };
         match MarketContext::<FuturesMarket>::load_all(rpc_client).await {
-            Ok(markets) => Ok(Self::new(Vec::new(), Vec::new(), markets, Vec::new())),
+            Ok(markets) => Ok(Self::new(
+                cache,
+                Vec::new(),
+                Vec::new(),
+                markets,
+                Vec::new(),
+            )),
             Err(e) => Err(e),
+        }
+    }
+
+    /// Reloads the [`CypherContext`] from an [`AccountsCache`].
+    pub async fn reload(&mut self, cache: Arc<AccountsCache>) {
+        let mut cache_guard = self.cache.write().await;
+        match cache_guard.reload_from_cache(cache.clone()) {
+            Ok(()) => (),
+            Err(_) => (),
+        };
+
+        let mut pools = self.pools.write().await;
+        for pool in pools.iter_mut() {
+            match pool.reload_from_cache(cache.clone()) {
+                Ok(()) => (),
+                Err(_) => (),
+            };
+        }
+
+        let mut perp_markets = self.perp_markets.write().await;
+        for perp_market in perp_markets.iter_mut() {
+            match perp_market.reload_from_cache(cache.clone()) {
+                Ok(()) => (),
+                Err(_) => (),
+            };
+        }
+
+        let mut futures_markets = self.futures_markets.write().await;
+        for futures_market in futures_markets.iter_mut() {
+            match futures_market.reload_from_cache(cache.clone()) {
+                Ok(()) => (),
+                Err(_) => (),
+            };
         }
     }
 }

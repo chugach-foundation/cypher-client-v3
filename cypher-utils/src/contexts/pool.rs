@@ -3,25 +3,40 @@ use solana_client::{nonblocking::rpc_client::RpcClient, rpc_filter::RpcFilterTyp
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
 
-use crate::utils::{
-    get_cypher_zero_copy_account, get_multiple_cypher_zero_copy_accounts, get_program_accounts,
+use crate::{
+    accounts_cache::AccountsCache,
+    utils::{
+        get_cypher_zero_copy_account, get_multiple_cypher_zero_copy_accounts, get_program_accounts,
+    },
 };
 
 use super::ContextError;
 
 /// Represents a [Pool].
+#[derive(Default)]
 pub struct PoolContext {
     pub address: Pubkey,
-    pub state: Pool,
+    pub state: Box<Pool>,
 }
 
 impl PoolContext {
     /// Creates a new [`PoolContext`].
-    pub fn new(address: &Pubkey, state: &Pool) -> Self {
+    pub fn new(address: &Pubkey, state: Box<Pool>) -> Self {
         Self {
             address: *address,
-            state: state.clone(),
+            state,
         }
+    }
+
+    /// Loads the [`Pool`] from the given account data.
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if the account data is invalid.
+    pub fn from_account_data(account_data: &[u8], market: &Pubkey) -> Result<Self, ContextError> {
+        let state = get_zero_copy_account::<Pool>(account_data);
+
+        Ok(Self::new(market, state))
     }
 
     /// Loads the given [`Pool`].
@@ -32,7 +47,7 @@ impl PoolContext {
     /// or the Pool's [`Pubkey`] given is not a valid [`Pool`] Account.
     pub async fn load(rpc_client: &Arc<RpcClient>, pool: &Pubkey) -> Result<Self, ContextError> {
         match get_cypher_zero_copy_account::<Pool>(rpc_client, pool).await {
-            Ok(s) => Ok(Self::new(pool, s.as_ref())),
+            Ok(s) => Ok(Self::new(pool, s)),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
             }
@@ -54,7 +69,7 @@ impl PoolContext {
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()
-                .map(|(idx, state)| Self::new(&pools[idx], state.as_ref()))
+                .map(|(idx, state)| Self::new(&pools[idx], state.clone()))
                 .collect()),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -74,12 +89,7 @@ impl PoolContext {
         match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await {
             Ok(s) => Ok(s
                 .iter()
-                .map(|state| {
-                    Self::new(
-                        &state.0,
-                        get_zero_copy_account::<Pool>(&state.1.data).as_ref(),
-                    )
-                })
+                .map(|state| Self::new(&state.0, get_zero_copy_account::<Pool>(&state.1.data)))
                 .collect()),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -94,11 +104,30 @@ impl PoolContext {
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn reload(&mut self, rpc_client: &Arc<RpcClient>) -> Result<(), ContextError> {
         self.state = match get_cypher_zero_copy_account::<Pool>(rpc_client, &self.address).await {
-            Ok(s) => s.as_ref().clone(),
+            Ok(s) => s,
             Err(e) => {
                 return Err(ContextError::ClientError(e));
             }
         };
+        Ok(())
+    }
+
+    /// Reloads the [`CacheContext`] from the given [`AccountsCache`],
+    /// if the corresponding EventQueue's account state exists in the cache.
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if the account state does not exist in the cache.
+    pub fn reload_from_cache(&mut self, cache: Arc<AccountsCache>) -> Result<(), ContextError> {
+        let cache_state = match cache.get(&self.address) {
+            Some(a) => a,
+            None => {
+                return Err(ContextError::MissingAccountState);
+            }
+        };
+
+        self.state = get_zero_copy_account(&cache_state.data);
+
         Ok(())
     }
 }

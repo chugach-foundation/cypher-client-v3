@@ -31,7 +31,6 @@ pub fn load_book_side<'a>(
     let leaf_size = LeafNode::LEN + callback_info_len;
     let capacity =
         (account_data.len() - SlabHeader::LEN - 8 - leaf_size) / (leaf_size + InnerNode::LEN);
-
     assert!(account_data[0] == expected_tag as u8);
 
     let (_, rem) = account_data.split_at_mut(8);

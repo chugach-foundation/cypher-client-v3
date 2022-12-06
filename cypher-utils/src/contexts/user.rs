@@ -2,7 +2,7 @@ use anchor_spl::token::{spl_token, TokenAccount};
 use cypher_client::{
     instructions::deposit_funds,
     utils::{
-        derive_pool_node_vault_address, derive_pool_node_vault_signer_address, derive_token_address,
+        derive_pool_node_vault_address, derive_pool_node_vault_signer_address, derive_token_address, get_zero_copy_account,
     },
     wrapped_sol, DerivativePosition, PositionSlot, SpotPosition,
 };
@@ -26,6 +26,7 @@ use crate::utils::{
 use super::ContextError;
 
 /// Represents a [`CypherSubAccount`].
+#[derive(Default, Clone)]
 pub struct SubAccountContext {
     /// The account's pubkey.
     pub address: Pubkey,
@@ -80,6 +81,7 @@ impl SubAccountContext {
 }
 
 /// Represents a [`CypherAccount`].
+#[derive(Default, Clone)]
 pub struct AccountContext {
     /// The account's pubkey.
     pub address: Pubkey,
@@ -100,6 +102,7 @@ impl AccountContext {
 ///
 /// Due to flexibility and implementation specific constraints, this structure
 /// will not abstract any functionality related to order placement and management.
+#[derive(Default, Clone)]
 pub struct UserContext {
     pub authority: Pubkey,
 
@@ -245,6 +248,41 @@ impl UserContext {
             },
             sub_account_ctxs,
         ))
+    }
+
+    /// Reloads the [`CypherAccount`] from the given account data.
+    /// 
+    /// ### Errors
+    /// 
+    /// This function will return an error if the account data is invalid.
+    pub fn reload_account_from_account_data(&mut self, account: &Pubkey, account_data: &[u8]) -> Result<(), ContextError> {
+        let account_state = get_zero_copy_account(account_data);
+        self.account_ctx = AccountContext {
+            address: *account,
+            state: account_state,
+        };
+        Ok(())
+    }
+
+    /// Reloads a [`CypherSubAccount`] from the given account data.
+    /// 
+    /// ### Errors
+    /// 
+    /// This function will return an error if the account data is invalid.
+    pub fn reload_sub_account_from_account_data(&mut self, sub_account: &Pubkey, account_data: &[u8]) -> Result<(), ContextError> {
+        let new_sub_account_state = get_zero_copy_account(account_data);
+        let new_sub_account_ctx = SubAccountContext {
+            address: *sub_account,
+            state: new_sub_account_state,
+        };
+
+        for sub_account_ctx in self.sub_account_ctxs.iter_mut() {
+            if sub_account_ctx.address == *sub_account {
+                *sub_account_ctx = new_sub_account_ctx.clone();
+            }
+        }
+
+        Ok(())
     }
 
     /// Creates the a [`CypherSubAccount`], if an account number is provided

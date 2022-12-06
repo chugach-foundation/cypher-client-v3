@@ -1,4 +1,4 @@
-use anchor_client::anchor_lang::{Owner, ZeroCopy};
+use anchor_lang::{Owner, ZeroCopy};
 use anchor_spl::dex::serum_dex::state::MarketState;
 use bytemuck::bytes_of;
 use cypher_client::{
@@ -20,20 +20,21 @@ use crate::{
 use super::ContextError;
 
 /// A generic market context.
+#[derive(Default)]
 pub struct MarketContext<T> {
     pub address: Pubkey,
-    pub state: T,
+    pub state: Box<T>,
 }
 
 impl<T> MarketContext<T>
 where
-    T: ZeroCopy + Owner,
+    T: ZeroCopy + Owner + Default,
 {
     /// Creates a new [`MarketContext<T>`].
-    pub fn new(market: &Pubkey, state: &T) -> Self {
+    pub fn new(market: &Pubkey, state: Box<T>) -> Self {
         Self {
             address: *market,
-            state: state.clone(),
+            state,
         }
     }
 
@@ -53,7 +54,18 @@ where
 
         let state = get_zero_copy_account::<T>(&account_state.data);
 
-        Ok(Self::new(market, state.as_ref()))
+        Ok(Self::new(market, state))
+    }
+
+    /// Loads the [`T`] from the given account data.
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if the account data is invalid.
+    pub fn from_account_data(account_data: &[u8], market: &Pubkey) -> Result<Self, ContextError> {
+        let state = get_zero_copy_account::<T>(account_data);
+
+        Ok(Self::new(market, state))
     }
 
     /// Loads the [`T`] with the given name, if it exists.
@@ -81,7 +93,7 @@ where
     /// have the correct Anchor discriminator for the provided type.
     pub async fn load(rpc_client: &Arc<RpcClient>, market: &Pubkey) -> Result<Self, ContextError> {
         match get_cypher_zero_copy_account::<T>(&rpc_client, market).await {
-            Ok(s) => Ok(Self::new(market, s.as_ref())),
+            Ok(s) => Ok(Self::new(market, s)),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
             }
@@ -103,7 +115,7 @@ where
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()
-                .map(|(idx, state)| Self::new(&markets[idx], state.as_ref()))
+                .map(|(idx, state)| Self::new(&markets[idx], state.clone()))
                 .collect()),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -121,9 +133,7 @@ where
         match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await {
             Ok(s) => Ok(s
                 .iter()
-                .map(|state| {
-                    Self::new(&state.0, get_zero_copy_account::<T>(&state.1.data).as_ref())
-                })
+                .map(|state| Self::new(&state.0, get_zero_copy_account::<T>(&state.1.data)))
                 .collect()),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -139,11 +149,30 @@ where
     pub async fn reload(&mut self, rpc_client: &Arc<RpcClient>) -> Result<(), ContextError> {
         let state_res = get_cypher_zero_copy_account::<T>(&rpc_client, &self.address).await;
         self.state = match state_res {
-            Ok(s) => s.as_ref().clone(),
+            Ok(s) => s.clone(),
             Err(e) => {
                 return Err(ContextError::ClientError(e));
             }
         };
+        Ok(())
+    }
+
+    /// Reloads the [`CacheContext`] from the given [`AccountsCache`],
+    /// if the corresponding EventQueue's account state exists in the cache.
+    ///
+    /// ### Errors
+    ///
+    /// This function will return an error if the account state does not exist in the cache.
+    pub fn reload_from_cache(&mut self, cache: Arc<AccountsCache>) -> Result<(), ContextError> {
+        let cache_state = match cache.get(&self.address) {
+            Some(a) => a,
+            None => {
+                return Err(ContextError::MissingAccountState);
+            }
+        };
+
+        self.state = get_zero_copy_account::<T>(&cache_state.data);
+
         Ok(())
     }
 }

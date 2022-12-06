@@ -30,7 +30,7 @@ pub trait GenericOrderBook: Send {
 }
 
 /// Represents an order.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct Order {
     /// The order side.
     pub side: Side,
@@ -124,7 +124,7 @@ fn get_serum_orders(market: &MarketState, slab: &Slab, side: Side) -> Vec<Order>
 }
 
 /// Represents an orderbook state.
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct OrderBook {
     pub bids: Vec<Order>,
     pub asks: Vec<Order>,
@@ -142,6 +142,17 @@ pub struct AgnosticOrderBookContext {
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub state: RwLock<OrderBook>,
+}
+
+impl Default for AgnosticOrderBookContext {
+    fn default() -> Self {
+        Self {
+            market: Pubkey::default(),
+            bids: Pubkey::default(),
+            asks: Pubkey::default(),
+            state: RwLock::new(OrderBook::default()),
+        }
+    }
 }
 
 #[async_trait]
@@ -336,7 +347,7 @@ impl AgnosticOrderBookContext {
     /// this method returns none.
     pub async fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
         let mut cumulative_size = 0;
-        let mut impact_price = 0;
+        let mut impact_price;
 
         let state = self.state.read().await;
 
@@ -367,6 +378,17 @@ pub struct SerumOrderBookContext {
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub state: RwLock<OrderBook>,
+}
+
+impl Default for SerumOrderBookContext {
+    fn default() -> Self {
+        Self {
+            market: Pubkey::default(),
+            bids: Pubkey::default(),
+            asks: Pubkey::default(),
+            state: RwLock::new(OrderBook::default()),
+        }
+    }
 }
 
 #[async_trait]
@@ -564,7 +586,7 @@ impl SerumOrderBookContext {
     /// this method returns none.
     pub async fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
         let mut cumulative_size = 0;
-        let mut impact_price = 0;
+        let mut impact_price;
 
         let state = self.state.read().await;
 

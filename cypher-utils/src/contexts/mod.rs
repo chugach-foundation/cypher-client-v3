@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod cypher;
 pub mod event_queue;
 pub mod market;
@@ -6,6 +7,7 @@ pub mod orderbook;
 pub mod pool;
 pub mod user;
 
+pub use cache::*;
 pub use cypher::*;
 pub use event_queue::*;
 pub use market::*;

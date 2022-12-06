@@ -20,6 +20,7 @@ use crate::accounts_cache::AccountsCache;
 use super::ContextError;
 
 /// Represents an order fill.
+#[derive(Debug, Clone)]
 pub struct Fill {
     /// The total base quantity.
     pub base_quantity: u64,
@@ -51,6 +52,19 @@ pub struct AgnosticEventQueueContext {
     pub head: RwLock<u64>,
     pub events: RwLock<Vec<FillEvent>>,
     pub callbacks: RwLock<Vec<CallBackInfo>>,
+}
+
+impl Default for AgnosticEventQueueContext {
+    fn default() -> Self {
+        Self {
+            market: Pubkey::default(),
+            event_queue: Pubkey::default(),
+            count: RwLock::new(0),
+            head: RwLock::new(0),
+            events: RwLock::new(Vec::new()),
+            callbacks: RwLock::new(Vec::new()),
+        }
+    }
 }
 
 #[async_trait]
@@ -263,6 +277,18 @@ pub struct SerumEventQueueContext {
     pub events: RwLock<Vec<Event>>,
 }
 
+impl Default for SerumEventQueueContext {
+    fn default() -> Self {
+        Self {
+            market: Pubkey::default(),
+            event_queue: Pubkey::default(),
+            count: RwLock::new(0),
+            head: RwLock::new(0),
+            events: RwLock::new(Vec::new()),
+        }
+    }
+}
+
 #[async_trait]
 impl GenericEventQueue for SerumEventQueueContext {
     async fn get_fills(&self) -> Vec<Fill> {
@@ -270,7 +296,7 @@ impl GenericEventQueue for SerumEventQueueContext {
         let mut fills = Vec::new();
 
         for event in events.iter() {
-            let ev = match event.as_view() {
+            match event.as_view() {
                 Ok(a) => {
                     match a {
                         EventView::Fill {
@@ -278,12 +304,8 @@ impl GenericEventQueue for SerumEventQueueContext {
                             maker,
                             native_qty_paid,
                             native_qty_received,
-                            native_fee_or_rebate,
                             order_id,
-                            owner,
-                            owner_slot,
-                            fee_tier,
-                            client_order_id,
+                            ..
                         } => {
                             let taker_side = if maker {
                                 // is maker
@@ -321,7 +343,7 @@ impl GenericEventQueue for SerumEventQueueContext {
                         _ => continue,
                     }
                 }
-                Err(e) => continue,
+                Err(_) => continue,
             };
         }
 
@@ -335,7 +357,7 @@ impl GenericEventQueue for SerumEventQueueContext {
         let mut fills = Vec::new();
 
         for event in sliced_events {
-            let ev = match event.as_view() {
+            match event.as_view() {
                 Ok(a) => {
                     match a {
                         EventView::Fill {
@@ -343,12 +365,8 @@ impl GenericEventQueue for SerumEventQueueContext {
                             maker,
                             native_qty_paid,
                             native_qty_received,
-                            native_fee_or_rebate,
                             order_id,
-                            owner,
-                            owner_slot,
-                            fee_tier,
-                            client_order_id,
+                            ..
                         } => {
                             let taker_side = if maker {
                                 // is maker
@@ -386,7 +404,7 @@ impl GenericEventQueue for SerumEventQueueContext {
                         _ => continue,
                     }
                 }
-                Err(e) => continue,
+                Err(_) => continue,
             };
         }
 

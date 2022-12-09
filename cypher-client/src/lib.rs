@@ -296,6 +296,54 @@ impl PartialEq for Side {
     }
 }
 
+impl PartialEq for DerivativeOrderType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (DerivativeOrderType::Limit, DerivativeOrderType::Limit) => true,
+            (DerivativeOrderType::Limit, DerivativeOrderType::ImmediateOrCancel) => false,
+            (DerivativeOrderType::Limit, DerivativeOrderType::FillOrKill) => false,
+            (DerivativeOrderType::Limit, DerivativeOrderType::PostOnly) => false,
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::Limit) => false,
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::ImmediateOrCancel) => {
+                true
+            }
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::FillOrKill) => false,
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::PostOnly) => false,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::Limit) => false,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::ImmediateOrCancel) => false,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::FillOrKill) => true,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::PostOnly) => false,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::Limit) => false,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::ImmediateOrCancel) => false,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::FillOrKill) => false,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::PostOnly) => true,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (DerivativeOrderType::Limit, DerivativeOrderType::Limit) => false,
+            (DerivativeOrderType::Limit, DerivativeOrderType::ImmediateOrCancel) => true,
+            (DerivativeOrderType::Limit, DerivativeOrderType::FillOrKill) => true,
+            (DerivativeOrderType::Limit, DerivativeOrderType::PostOnly) => true,
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::Limit) => true,
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::ImmediateOrCancel) => {
+                false
+            }
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::FillOrKill) => true,
+            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::PostOnly) => true,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::Limit) => true,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::ImmediateOrCancel) => true,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::FillOrKill) => false,
+            (DerivativeOrderType::FillOrKill, DerivativeOrderType::PostOnly) => true,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::Limit) => true,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::ImmediateOrCancel) => true,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::FillOrKill) => true,
+            (DerivativeOrderType::PostOnly, DerivativeOrderType::PostOnly) => false,
+        }
+    }
+}
+
 impl Clearing {
     pub fn init_margin_ratio(&self) -> I80F48 {
         I80F48::from(self.config.init_margin)

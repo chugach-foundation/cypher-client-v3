@@ -6817,6 +6817,11 @@
           "index": false
         },
         {
+          "name": "subAccountIdx",
+          "type": "u8",
+          "index": false
+        },
+        {
           "name": "coinQty",
           "type": "u64",
           "index": false
@@ -7049,13 +7054,13 @@
     },
     {
       "code": 6042,
-      "name": "FuturesOrdersAccountFull",
-      "msg": "the futures orders account is full"
+      "name": "OrdersAccountFull",
+      "msg": "the orders account is full"
     },
     {
       "code": 6043,
-      "name": "FuturesOrdersAccountMustBeEmpty",
-      "msg": "attempted to close a futures orders account with remaining orders"
+      "name": "OrdersAccountMustBeEmpty",
+      "msg": "attempted to close an orders account with remaining orders"
     },
     {
       "code": 6044,

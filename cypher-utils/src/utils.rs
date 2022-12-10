@@ -1,4 +1,6 @@
 use anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator, Owner, ZeroCopy};
+use bytemuck::Pod;
+use cypher_client::serum::parse_dex_account;
 use log::warn;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
@@ -354,4 +356,17 @@ pub fn get_create_account_ix(
         Rent::default().minimum_balance(space)
     };
     system_instruction::create_account(&payer.pubkey(), &target.pubkey(), rent, space as u64, pid)
+}
+
+/// Attempts to get an OpenBook DEX account data and parses it into the given `T`.
+pub async fn get_dex_account<T: Pod>(
+    rpc_client: &RpcClient,
+    account: &Pubkey,
+) -> Result<T, ClientError> {
+    match rpc_client.get_account_data(account).await {
+        Ok(a) => Ok(parse_dex_account::<T>(&a)),
+        Err(e) => {
+            return Err(e);
+        }
+    }
 }

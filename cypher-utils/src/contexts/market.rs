@@ -20,7 +20,7 @@ use crate::{
 use super::ContextError;
 
 /// A generic market context.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct MarketContext<T> {
     pub address: Pubkey,
     pub state: Box<T>,
@@ -178,6 +178,7 @@ where
 }
 
 /// Represents a Serum Market
+#[derive(Clone, Copy)]
 pub struct SpotMarketContext {
     pub address: Pubkey,
     pub bids: Pubkey,
@@ -187,8 +188,44 @@ pub struct SpotMarketContext {
     pub base_vault: Pubkey,
     pub quote_mint: Pubkey,
     pub quote_vault: Pubkey,
-
     pub state: MarketState,
+}
+
+impl Default for SpotMarketContext {
+    fn default() -> Self {
+        Self { 
+             address: Pubkey::default(),
+            bids: Pubkey::default(),
+            asks: Pubkey::default(),
+            event_queue: Pubkey::default(),
+            base_mint: Pubkey::default(),
+            base_vault: Pubkey::default(),
+            quote_mint: Pubkey::default(),
+            quote_vault: Pubkey::default(),
+            state: MarketState {
+                account_flags: u64::default(),
+                own_address: [0u64; 4],
+                vault_signer_nonce: u64::default(),
+                coin_mint: [0u64; 4],
+                pc_mint: [0u64; 4],
+                coin_vault: [0u64; 4],
+                coin_deposits_total: u64::default(),
+                coin_fees_accrued: u64::default(),
+                pc_vault: [0u64; 4],
+                pc_deposits_total: u64::default(),
+                pc_fees_accrued: u64::default(),
+                pc_dust_threshold: u64::default(),
+                req_q: [0u64; 4],
+                event_q: [0u64; 4],
+                bids: [0u64; 4],
+                asks: [0u64; 4],
+                coin_lot_size: u64::default(),
+                pc_lot_size: u64::default(),
+                fee_rate_bps: u64::default(),
+                referrer_rebates_accrued: u64::default()
+            },
+        }
+    }
 }
 
 impl SpotMarketContext {

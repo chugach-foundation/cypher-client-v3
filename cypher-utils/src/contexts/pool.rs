@@ -13,7 +13,7 @@ use crate::{
 use super::ContextError;
 
 /// Represents a [Pool].
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PoolContext {
     pub address: Pubkey,
     pub state: Box<Pool>,

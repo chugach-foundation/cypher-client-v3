@@ -1,3 +1,5 @@
+use std::any::type_name;
+
 use {
     dashmap::{mapref::one::Ref, DashMap},
     log::{info, warn},
@@ -61,17 +63,26 @@ impl AccountsCache {
         if maybe_state.is_some() {
             let state = maybe_state.unwrap();
             if state.slot > data.slot {
-                info!("[CACHE] Attempted to update key: {} with older data!", key);
+                info!(
+                    "{} - Attempted to update key: {} with older data!",
+                    type_name::<Self>(),
+                    key
+                );
                 return;
             }
         }
         match self.sender.send(data.clone()) {
             Ok(r) => {
-                info!("[CACHE] Sent updated Account state to {} recivers.", r);
+                info!(
+                    "{} - Sent updated Account state to {} recievers.",
+                    type_name::<Self>(),
+                    r
+                );
             }
             Err(_) => {
                 warn!(
-                    "[CACHE] Failed to send message about updated Account {}",
+                    "{} - Failed to send message about updated Account {}",
+                    type_name::<Self>(),
                     key.to_string()
                 );
             }

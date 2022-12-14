@@ -35,23 +35,22 @@ pub struct Fill {
 }
 
 /// A trait that can be used to generically get data for both AOB and Serum Event Queues.
-#[async_trait]
-pub trait GenericEventQueue {
+pub trait GenericEventQueue: Send + Sync {
     /// Gets the fills in the Event Queue.
-    async fn get_fills(&self) -> Vec<Fill>;
+    fn get_fills(&self) -> Vec<Fill>;
 
     /// Gets the fills in the Event Queue that have occurred since the given sequence number.
-    async fn get_fills_since(&self, seq: u64) -> Vec<Fill>;
+    fn get_fills_since(&self, seq: u64) -> Vec<Fill>;
 }
 
 /// Represents an AOB Event Queue.
 pub struct AgnosticEventQueueContext {
     pub market: Pubkey,
     pub event_queue: Pubkey,
-    pub count: RwLock<u64>,
-    pub head: RwLock<u64>,
-    pub events: RwLock<Vec<FillEvent>>,
-    pub callbacks: RwLock<Vec<CallBackInfo>>,
+    pub count: u64,
+    pub head: u64,
+    pub events: Vec<FillEvent>,
+    pub callbacks: Vec<CallBackInfo>,
 }
 
 impl Default for AgnosticEventQueueContext {
@@ -59,59 +58,62 @@ impl Default for AgnosticEventQueueContext {
         Self {
             market: Pubkey::default(),
             event_queue: Pubkey::default(),
-            count: RwLock::new(0),
-            head: RwLock::new(0),
-            events: RwLock::new(Vec::new()),
-            callbacks: RwLock::new(Vec::new()),
+            count: 0,
+            head: 0,
+            events: Vec::new(),
+            callbacks: Vec::new(),
         }
     }
 }
 
-#[async_trait]
 impl GenericEventQueue for AgnosticEventQueueContext {
-    async fn get_fills(&self) -> Vec<Fill> {
-        let events = self.events.read().await;
+    fn get_fills(&self) -> Vec<Fill> {
+        let events = &self.events;
         let mut fills = Vec::new();
 
         for event in events.iter() {
-            let aob_side = AobSide::from_u8(event.taker_side).unwrap();
-            let taker_side = if aob_side == AobSide::Ask {
-                Side::Ask
-            } else {
-                Side::Bid
-            };
-            fills.push(Fill {
-                base_quantity: event.base_size,
-                quote_quantity: event.quote_size,
-                price: event.quote_size / event.base_size,
-                taker_side,
-                maker_order_id: event.maker_order_id,
-            });
+            if event.maker_order_id != u128::default() && event.base_size != 0 {
+                let aob_side = AobSide::from_u8(event.taker_side).unwrap();
+                let taker_side = if aob_side == AobSide::Ask {
+                    Side::Ask
+                } else {
+                    Side::Bid
+                };
+                fills.push(Fill {
+                    base_quantity: event.base_size,
+                    quote_quantity: event.quote_size,
+                    price: event.quote_size / event.base_size,
+                    taker_side,
+                    maker_order_id: event.maker_order_id,
+                });
+            }
         }
 
         fills
     }
 
-    async fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
-        let head = self.head.read().await;
-        let events = self.events.read().await;
-        let (sliced_events, _) = events.split_at(*head as usize);
+    fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
+        let head = self.head;
+        let events = &self.events;
+        let (sliced_events, _) = events.split_at(head as usize);
         let mut fills = Vec::new();
 
         for event in sliced_events {
-            let aob_side = AobSide::from_u8(event.taker_side).unwrap();
-            let taker_side = if aob_side == AobSide::Ask {
-                Side::Ask
-            } else {
-                Side::Bid
-            };
-            fills.push(Fill {
-                base_quantity: event.base_size,
-                quote_quantity: event.quote_size,
-                price: event.quote_size / event.base_size,
-                taker_side,
-                maker_order_id: event.maker_order_id,
-            });
+            if event.maker_order_id != u128::default() && event.base_size != 0{
+                let aob_side = AobSide::from_u8(event.taker_side).unwrap();
+                let taker_side = if aob_side == AobSide::Ask {
+                    Side::Ask
+                } else {
+                    Side::Bid
+                };
+                fills.push(Fill {
+                    base_quantity: event.base_size,
+                    quote_quantity: event.quote_size,
+                    price: event.quote_size / event.base_size,
+                    taker_side,
+                    maker_order_id: event.maker_order_id,
+                });
+            }
         }
 
         fills
@@ -131,10 +133,10 @@ impl AgnosticEventQueueContext {
         Self {
             market: *market,
             event_queue: *event_queue,
-            count: RwLock::new(count),
-            head: RwLock::new(head),
-            events: RwLock::new(events),
-            callbacks: RwLock::new(callbacks),
+            count,
+            head,
+            events,
+            callbacks,
         }
     }
 
@@ -175,17 +177,17 @@ impl AgnosticEventQueueContext {
         market: &Pubkey,
         event_queue: &Pubkey,
         data: &[u8],
-    ) -> Result<Self, ContextError> {
+    ) -> Self {
         let (eq_header, fills, callbacks) = parse_aob_event_queue(&data);
 
-        Ok(Self::new(
+        Self::new(
             market,
             event_queue,
             eq_header.count,
             eq_header.head,
             fills.to_vec(),
             callbacks.to_vec(),
-        ))
+        )
     }
 
     /// Loads the [`AgnosticEventQueueContext`] from the given [`AccountsCache`],
@@ -223,17 +225,13 @@ impl AgnosticEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_account_data(&mut self, data: &[u8]) {
+    pub fn reload_from_account_data(&mut self, data: &[u8]) {
         let (eq_header, new_fills, new_callbacks) = parse_aob_event_queue(&data);
 
-        let mut count = self.count.write().await;
-        *count = eq_header.count;
-        let mut head = self.head.write().await;
-        *head = eq_header.head;
-        let mut callbacks = self.callbacks.write().await;
-        *callbacks = new_callbacks.to_vec();
-        let mut events = self.events.write().await;
-        *events = new_fills.to_vec();
+        self.count = eq_header.count;
+        self.head = eq_header.head;
+        self.callbacks = new_callbacks.to_vec();
+        self.events = new_fills.to_vec();
     }
 
     /// Reloads the [`AgnosticEventQueueContext`] from the given [`AccountsCache`],
@@ -242,7 +240,7 @@ impl AgnosticEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_cache(
+    pub fn reload_from_cache(
         &mut self,
         cache: Arc<AccountsCache>,
     ) -> Result<(), ContextError> {
@@ -255,14 +253,10 @@ impl AgnosticEventQueueContext {
 
         let (eq_header, new_fills, new_callbacks) = parse_aob_event_queue(&eq_state.data);
 
-        let mut count = self.count.write().await;
-        *count = eq_header.count;
-        let mut head = self.head.write().await;
-        *head = eq_header.head;
-        let mut callbacks = self.callbacks.write().await;
-        *callbacks = new_callbacks.to_vec();
-        let mut events = self.events.write().await;
-        *events = new_fills.to_vec();
+        self.count = eq_header.count;
+        self.head = eq_header.head;
+        self.callbacks = new_callbacks.to_vec();
+        self.events = new_fills.to_vec();
 
         Ok(())
     }
@@ -272,9 +266,9 @@ impl AgnosticEventQueueContext {
 pub struct SerumEventQueueContext {
     pub market: Pubkey,
     pub event_queue: Pubkey,
-    pub count: RwLock<u64>,
-    pub head: RwLock<u64>,
-    pub events: RwLock<Vec<Event>>,
+    pub count: u64,
+    pub head: u64,
+    pub events: Vec<Event>,
 }
 
 impl Default for SerumEventQueueContext {
@@ -282,17 +276,16 @@ impl Default for SerumEventQueueContext {
         Self {
             market: Pubkey::default(),
             event_queue: Pubkey::default(),
-            count: RwLock::new(0),
-            head: RwLock::new(0),
-            events: RwLock::new(Vec::new()),
+            count: 0,
+            head: 0,
+            events: Vec::new(),
         }
     }
 }
 
-#[async_trait]
 impl GenericEventQueue for SerumEventQueueContext {
-    async fn get_fills(&self) -> Vec<Fill> {
-        let events = self.events.read().await;
+    fn get_fills(&self) -> Vec<Fill> {
+        let events = &self.events;
         let mut fills = Vec::new();
 
         for event in events.iter() {
@@ -307,38 +300,40 @@ impl GenericEventQueue for SerumEventQueueContext {
                             order_id,
                             ..
                         } => {
-                            let taker_side = if maker {
-                                // is maker
-                                if side == DexSide::Ask {
-                                    Side::Bid
+                            if order_id != u128::default() {
+                                let taker_side = if maker {
+                                    // is maker
+                                    if side == DexSide::Ask {
+                                        Side::Bid
+                                    } else {
+                                        Side::Ask
+                                    }
                                 } else {
-                                    Side::Ask
-                                }
-                            } else {
-                                // not maker
-                                if side == DexSide::Ask {
-                                    Side::Ask
+                                    // not maker
+                                    if side == DexSide::Ask {
+                                        Side::Ask
+                                    } else {
+                                        Side::Bid
+                                    }
+                                };
+                                let base_quantity = if side == DexSide::Ask {
+                                    native_qty_paid
                                 } else {
-                                    Side::Bid
-                                }
-                            };
-                            let base_quantity = if side == DexSide::Ask {
-                                native_qty_paid
-                            } else {
-                                native_qty_received
-                            };
-                            let quote_quantity = if side == DexSide::Ask {
-                                native_qty_received
-                            } else {
-                                native_qty_paid
-                            };
-                            fills.push(Fill {
-                                base_quantity,
-                                quote_quantity,
-                                price: quote_quantity / base_quantity,
-                                taker_side,
-                                maker_order_id: order_id,
-                            });
+                                    native_qty_received
+                                };
+                                let quote_quantity = if side == DexSide::Ask {
+                                    native_qty_received
+                                } else {
+                                    native_qty_paid
+                                };
+                                fills.push(Fill {
+                                    base_quantity,
+                                    quote_quantity,
+                                    price: quote_quantity / base_quantity,
+                                    taker_side,
+                                    maker_order_id: order_id,
+                                });
+                            }
                         }
                         _ => continue,
                     }
@@ -350,10 +345,10 @@ impl GenericEventQueue for SerumEventQueueContext {
         fills
     }
 
-    async fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
-        let head = self.head.read().await;
-        let events = self.events.read().await;
-        let (sliced_events, _) = events.split_at(*head as usize);
+    fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
+        let head = self.head;
+        let events = &self.events;
+        let (sliced_events, _) = events.split_at(head as usize);
         let mut fills = Vec::new();
 
         for event in sliced_events {
@@ -368,38 +363,40 @@ impl GenericEventQueue for SerumEventQueueContext {
                             order_id,
                             ..
                         } => {
-                            let taker_side = if maker {
-                                // is maker
-                                if side == DexSide::Ask {
-                                    Side::Bid
+                            if order_id != u128::default() {
+                                let taker_side = if maker {
+                                    // is maker
+                                    if side == DexSide::Ask {
+                                        Side::Bid
+                                    } else {
+                                        Side::Ask
+                                    }
                                 } else {
-                                    Side::Ask
-                                }
-                            } else {
-                                // not maker
-                                if side == DexSide::Ask {
-                                    Side::Ask
+                                    // not maker
+                                    if side == DexSide::Ask {
+                                        Side::Ask
+                                    } else {
+                                        Side::Bid
+                                    }
+                                };
+                                let base_quantity = if side == DexSide::Ask {
+                                    native_qty_received
                                 } else {
-                                    Side::Bid
-                                }
-                            };
-                            let base_quantity = if side == DexSide::Ask {
-                                native_qty_received
-                            } else {
-                                native_qty_paid
-                            };
-                            let quote_quantity = if side == DexSide::Ask {
-                                native_qty_paid
-                            } else {
-                                native_qty_received
-                            };
-                            fills.push(Fill {
-                                base_quantity,
-                                quote_quantity,
-                                price: quote_quantity / base_quantity,
-                                taker_side,
-                                maker_order_id: order_id,
-                            });
+                                    native_qty_paid
+                                };
+                                let quote_quantity = if side == DexSide::Ask {
+                                    native_qty_paid
+                                } else {
+                                    native_qty_received
+                                };
+                                fills.push(Fill {
+                                    base_quantity,
+                                    quote_quantity,
+                                    price: quote_quantity / base_quantity,
+                                    taker_side,
+                                    maker_order_id: order_id,
+                                });
+                            }
                         }
                         _ => continue,
                     }
@@ -424,9 +421,9 @@ impl SerumEventQueueContext {
         Self {
             market: *market,
             event_queue: *event_queue,
-            count: RwLock::new(count),
-            head: RwLock::new(head),
-            events: RwLock::new(events),
+            count,
+            head,
+            events,
         }
     }
 
@@ -468,17 +465,17 @@ impl SerumEventQueueContext {
         market: &Pubkey,
         event_queue: &Pubkey,
         data: &[u8],
-    ) -> Result<Self, ContextError> {
+    ) -> Self {
         let data_words = remove_dex_account_padding(data);
         let (header, seg0, seg1) = parse_dex_event_queue(&data_words);
 
-        Ok(Self::new(
+        Self::new(
             market,
             event_queue,
             header.count(),
             header.head(),
             [seg0, seg1].concat(),
-        ))
+        )
     }
 
     /// Loads the [`SerumEventQueueContext`] from the given [`AccountsCache`], if the given EventQueue's
@@ -517,16 +514,13 @@ impl SerumEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_account_data(&mut self, data: &[u8]) {
+    pub fn reload_from_account_data(&mut self, data: &[u8]) {
         let data_words = remove_dex_account_padding(data);
         let (header, seg0, seg1) = parse_dex_event_queue(&data_words);
 
-        let mut count = self.count.write().await;
-        *count = header.count();
-        let mut head = self.head.write().await;
-        *head = header.head();
-        let mut events = self.events.write().await;
-        *events = [seg0, seg1].concat();
+        self.count = header.count();
+        self.head = header.head();
+        self.events = [seg0, seg1].concat();
     }
 
     /// Reloads the [`SerumEventQueueContext`] from the given [`AccountsCache`],
@@ -535,7 +529,7 @@ impl SerumEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_cache(
+    pub fn reload_from_cache(
         &mut self,
         cache: Arc<AccountsCache>,
     ) -> Result<(), ContextError> {
@@ -549,12 +543,9 @@ impl SerumEventQueueContext {
         let data_words = remove_dex_account_padding(eq_state.data.as_slice());
         let (header, seg0, seg1) = parse_dex_event_queue(&data_words);
 
-        let mut count = self.count.write().await;
-        *count = header.count();
-        let mut head = self.head.write().await;
-        *head = header.head();
-        let mut events = self.events.write().await;
-        *events = [seg0, seg1].concat();
+        self.count = header.count();
+        self.head = header.head();
+        self.events = [seg0, seg1].concat();
 
         Ok(())
     }

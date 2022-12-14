@@ -62,10 +62,10 @@ where
     /// ### Errors
     ///
     /// This function will return an error if the account data is invalid.
-    pub fn from_account_data(account_data: &[u8], market: &Pubkey) -> Result<Self, ContextError> {
+    pub fn from_account_data(account_data: &[u8], market: &Pubkey) -> Self {
         let state = get_zero_copy_account::<T>(account_data);
 
-        Ok(Self::new(market, state))
+        Self::new(market, state)
     }
 
     /// Loads the [`T`] with the given name, if it exists.
@@ -157,6 +157,11 @@ where
         Ok(())
     }
 
+    /// Reloads the [`T`]'s state from the given account data.
+    pub async fn reload_from_account_data(&mut self, account_data: &[u8]) {
+        self.state = get_zero_copy_account::<T>(account_data);
+    }
+
     /// Reloads the [`CacheContext`] from the given [`AccountsCache`],
     /// if the corresponding EventQueue's account state exists in the cache.
     ///
@@ -184,6 +189,7 @@ pub struct SpotMarketContext {
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub event_queue: Pubkey,
+    pub request_queue: Pubkey,
     pub base_mint: Pubkey,
     pub base_vault: Pubkey,
     pub quote_mint: Pubkey,
@@ -193,11 +199,12 @@ pub struct SpotMarketContext {
 
 impl Default for SpotMarketContext {
     fn default() -> Self {
-        Self { 
-             address: Pubkey::default(),
+        Self {
+            address: Pubkey::default(),
             bids: Pubkey::default(),
             asks: Pubkey::default(),
             event_queue: Pubkey::default(),
+            request_queue: Pubkey::default(),
             base_mint: Pubkey::default(),
             base_vault: Pubkey::default(),
             quote_mint: Pubkey::default(),
@@ -222,7 +229,7 @@ impl Default for SpotMarketContext {
                 coin_lot_size: u64::default(),
                 pc_lot_size: u64::default(),
                 fee_rate_bps: u64::default(),
-                referrer_rebates_accrued: u64::default()
+                referrer_rebates_accrued: u64::default(),
             },
         }
     }
@@ -235,6 +242,7 @@ impl SpotMarketContext {
         bids: &Pubkey,
         asks: &Pubkey,
         event_queue: &Pubkey,
+        request_queue: &Pubkey,
         base_mint: &Pubkey,
         base_vault: &Pubkey,
         quote_mint: &Pubkey,
@@ -246,6 +254,7 @@ impl SpotMarketContext {
             bids: *bids,
             asks: *asks,
             event_queue: *event_queue,
+            request_queue: *request_queue,
             base_mint: *base_mint,
             base_vault: *base_vault,
             quote_mint: *quote_mint,
@@ -274,6 +283,7 @@ impl SpotMarketContext {
         let bids = state.bids;
         let asks = state.asks;
         let event_q = state.event_q;
+        let request_q = state.req_q;
         let coin_mint = state.coin_mint;
         let coin_vault = state.coin_vault;
         let pc_mint = state.pc_mint;
@@ -284,6 +294,7 @@ impl SpotMarketContext {
             &Pubkey::new(bytes_of(&bids)),
             &Pubkey::new(bytes_of(&asks)),
             &Pubkey::new(bytes_of(&event_q)),
+            &Pubkey::new(bytes_of(&request_q)),
             &Pubkey::new(bytes_of(&coin_mint)),
             &Pubkey::new(bytes_of(&coin_vault)),
             &Pubkey::new(bytes_of(&pc_mint)),
@@ -312,6 +323,7 @@ impl SpotMarketContext {
         let bids = state.bids;
         let asks = state.asks;
         let event_q = state.event_q;
+        let request_q = state.req_q;
         let coin_mint = state.coin_mint;
         let coin_vault = state.coin_vault;
         let pc_mint = state.pc_mint;
@@ -322,6 +334,7 @@ impl SpotMarketContext {
             &Pubkey::new(bytes_of(&bids)),
             &Pubkey::new(bytes_of(&asks)),
             &Pubkey::new(bytes_of(&event_q)),
+            &Pubkey::new(bytes_of(&request_q)),
             &Pubkey::new(bytes_of(&coin_mint)),
             &Pubkey::new(bytes_of(&coin_vault)),
             &Pubkey::new(bytes_of(&pc_mint)),
@@ -354,6 +367,7 @@ impl SpotMarketContext {
                     let bids = state.bids;
                     let asks = state.asks;
                     let event_q = state.event_q;
+                    let request_q = state.req_q;
                     let coin_mint = state.coin_mint;
                     let coin_vault = state.coin_vault;
                     let pc_mint = state.pc_mint;
@@ -364,6 +378,7 @@ impl SpotMarketContext {
                         &Pubkey::new(bytes_of(&bids)),
                         &Pubkey::new(bytes_of(&asks)),
                         &Pubkey::new(bytes_of(&event_q)),
+                        &Pubkey::new(bytes_of(&request_q)),
                         &Pubkey::new(bytes_of(&coin_mint)),
                         &Pubkey::new(bytes_of(&coin_vault)),
                         &Pubkey::new(bytes_of(&pc_mint)),

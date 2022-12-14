@@ -18,6 +18,8 @@ use {
     },
 };
 
+use std::any::type_name;
+
 use tokio::sync::broadcast::error::SendError;
 
 use crate::{
@@ -80,7 +82,8 @@ impl StreamingAccountInfoService {
             Ok(()) => (),
             Err(e) => {
                 warn!(
-                    "[AIS] There was an error while fetching initial account infos: {}",
+                    "{} - There was an error while fetching initial account infos: {}",
+                    type_name::<Self>(),
                     e.to_string()
                 );
             }
@@ -102,7 +105,12 @@ impl StreamingAccountInfoService {
                 match cloned_handler.run().await {
                     Ok(_) => (),
                     Err(e) => {
-                        warn!("[AIS] There was an error running subscription handler for account {}: {}", cloned_handler.account, e.to_string());
+                        warn!(
+                            "{} - There was an error running subscription handler for account {}: {}",
+                            type_name::<Self>(),
+                            cloned_handler.account,
+                            e.to_string()
+                        );
                     }
                 }
             });
@@ -116,13 +124,18 @@ impl StreamingAccountInfoService {
 
         tokio::select! {
             _ = shutdown_receiver.recv() => {
-                info!("[AIS] Shutting down subscription handlers.");
+                info!("{} - Shutting down subscription handlers.", type_name::<Self>());
                 let handlers = self.handlers.read().await;
                 for handler in handlers.iter() {
                     match handler.stop().await {
                         Ok(_) => (),
                         Err(e) => {
-                            warn!("[AIS] There was an error removing subscription handler for account {}: {}", handler.account, e.to_string());
+                            warn!(
+                                "{} - There was an error removing subscription handler for account {}: {}", 
+                                type_name::<Self>(),
+                                handler.account,
+                                e.to_string()
+                            );
                             continue;
                         }
                     }
@@ -138,7 +151,8 @@ impl StreamingAccountInfoService {
             Ok(()) => (),
             Err(e) => {
                 warn!(
-                    "[AIS] There was an error while fetching new account infos: {}",
+                    "{} - There was an error while fetching new account infos: {}", 
+                    type_name::<Self>(),
                     e.to_string()
                 );
             }
@@ -158,7 +172,12 @@ impl StreamingAccountInfoService {
                 match cloned_handler.run().await {
                     Ok(_) => (),
                     Err(e) => {
-                        warn!("[AIS] There was an error running subscription handler for account {}: {}", cloned_handler.account, e.to_string());
+                        warn!(
+                            "{} - There was an error running subscription handler for account {}: {}", 
+                            type_name::<Self>(),
+                            cloned_handler.account,
+                            e.to_string()
+                        );
                     }
                 }
             });
@@ -178,7 +197,12 @@ impl StreamingAccountInfoService {
                 match handler.stop().await {
                     Ok(_) => (),
                     Err(e) => {
-                        warn!("[AIS] There was an error removing subscription handler for account {}: {}", handler.account, e.to_string());
+                        warn!(
+                            "{} - There was an error removing subscription handler for account {}: {}",
+                            type_name::<Self>(),
+                            handler.account,
+                            e.to_string()
+                        );
                         continue;
                     }
                 }
@@ -210,13 +234,13 @@ impl StreamingAccountInfoService {
         let res = match rpc_result {
             Ok(r) => r,
             Err(e) => {
-                warn!("[AIS] Could not fetch account infos: {}", e.to_string());
+                warn!("{} - Could not fetch account infos: {}", type_name::<Self>(), e.to_string());
                 return Err(e);
             }
         };
 
         let mut infos = res.value;
-        info!("[AIS] Fetched {} account infos.", infos.len());
+        info!("{} - Fetched {} account infos.", type_name::<Self>(), infos.len());
 
         while !infos.is_empty() {
             let next = infos.pop().unwrap();
@@ -227,7 +251,8 @@ impl StreamingAccountInfoService {
                 Some(ai) => ai,
                 None => {
                     warn!(
-                        "[AIS] [{}/{}] An account info was missing!!",
+                        "{} - [{}/{}] An account info was missing!!",
+                        type_name::<Self>(),
                         i,
                         infos.len()
                     );
@@ -299,7 +324,7 @@ impl SubscriptionHandler {
                     if update.is_some() {
                         let account_res = update.unwrap();
                         let account_data = get_account_info(&account_res.value).unwrap();
-                        info!("[AIS] Received account update for {}, updating cache.", self.account);
+                        info!("{} - Received account update for {}, updating cache.", type_name::<Self>(), self.account);
                         self.cache.insert(self.account, AccountState {
                             account: self.account,
                             data: account_data,
@@ -308,7 +333,7 @@ impl SubscriptionHandler {
                     }
                 },
                 _ = shutdown_receiver.recv() => {
-                    info!("[AIS] Shutting down subscription handler for {}", self.account);
+                    info!("{} - Shutting down subscription handler for {}", type_name::<Self>(), self.account);
                     break;
                 }
             }

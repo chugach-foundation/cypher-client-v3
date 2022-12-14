@@ -9,25 +9,24 @@ use tokio::sync::RwLock;
 use super::{GenericOrderBook, Order};
 
 /// A trait that can be used to generically get data for both AOB and Serum Orders Accounts.
-#[async_trait(?Send)]
-pub trait GenericOpenOrders {
+pub trait GenericOpenOrders: Send + Sync {
     /// Gets open orders in the orders account and maps them with the existing orders on the given Order Book.
     ///
     /// Callee must make sure that the given [GenericOrderBook] is of a type that is compatible with the
-    async fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order>;
+    fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order>;
 }
 
 /// Represents the Cypher Open Orders Account Context (used for the AOB).
 pub struct AgnosticOpenOrdersContext {
     pub account: Pubkey,
-    pub state: RwLock<Box<OrdersAccount>>,
+    pub state: Box<OrdersAccount>,
 }
 
 impl Default for AgnosticOpenOrdersContext {
     fn default() -> Self {
         Self {
             account: Pubkey::default(),
-            state: RwLock::new(Box::new(OrdersAccount {
+            state: Box::new(OrdersAccount {
                 order_count: u8::default(),
                 padding: [0; 7],
                 authority: Pubkey::default(),
@@ -38,25 +37,22 @@ impl Default for AgnosticOpenOrdersContext {
                 quote_token_free: [0; 24],
                 quote_token_locked: [0; 24],
                 open_orders: [OpenOrder::default(); 128],
-            })),
+            }),
         }
     }
 }
 
-#[async_trait(?Send)]
 impl GenericOpenOrders for AgnosticOpenOrdersContext {
-    async fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order> {
+    fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order> {
         let mut orders = Vec::new();
 
-        let state = self.state.read().await;
-        let open_orders = state.open_orders;
+        let open_orders = self.state.open_orders;
 
         for i in 0..open_orders.len() {
-            let order = state.open_orders[i];
+            let order = self.state.open_orders[i];
 
             if order.order_id != u128::default() {
-                let ob_order =
-                    get_orderbook_line(orderbook, order.order_id, order.side.into()).await;
+                let ob_order = get_orderbook_line(orderbook, order.order_id, order.side.into());
 
                 if ob_order.is_some() {
                     let ob_order = ob_order.unwrap();
@@ -82,7 +78,7 @@ impl AgnosticOpenOrdersContext {
     pub fn new(account: &Pubkey, state: Box<OrdersAccount>) -> Self {
         Self {
             account: *account,
-            state: RwLock::new(state),
+            state,
         }
     }
 
@@ -102,25 +98,22 @@ impl AgnosticOpenOrdersContext {
     /// ### Errors
     ///
     /// This function will return an error if the account data is invalid.
-    pub async fn reload_from_account_data(&mut self, account_data: &[u8]) {
-        let new_state = get_zero_copy_account::<OrdersAccount>(account_data);
-
-        let mut state = self.state.write().await;
-        *state = new_state;
+    pub fn reload_from_account_data(&mut self, account_data: &[u8]) {
+        self.state = get_zero_copy_account::<OrdersAccount>(account_data);
     }
 }
 
 /// Represents the Serum Open Orders Account Context.
 pub struct SerumOpenOrdersContext {
     pub account: Pubkey,
-    pub state: RwLock<OpenOrders>,
+    pub state: OpenOrders,
 }
 
 impl Default for SerumOpenOrdersContext {
     fn default() -> Self {
         Self {
             account: Pubkey::default(),
-            state: RwLock::new(OpenOrders {
+            state: OpenOrders {
                 account_flags: u64::default(),
                 market: [0; 4],
                 owner: [0; 4],
@@ -133,19 +126,17 @@ impl Default for SerumOpenOrdersContext {
                 orders: [0; 128],
                 client_order_ids: [0; 128],
                 referrer_rebates_accrued: u64::default(),
-            }),
+            },
         }
     }
 }
 
-#[async_trait(?Send)]
 impl GenericOpenOrders for SerumOpenOrdersContext {
-    async fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order> {
+    fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order> {
         let mut orders = Vec::new();
 
-        let state = self.state.read().await;
-        let order_ids = state.orders;
-        let client_order_ids = state.client_order_ids;
+        let order_ids = self.state.orders;
+        let client_order_ids = self.state.client_order_ids;
 
         for i in 0..order_ids.len() {
             let order_id = order_ids[i];
@@ -153,8 +144,8 @@ impl GenericOpenOrders for SerumOpenOrdersContext {
 
             if order_id != u128::default() {
                 let price = (order_id >> 64) as u64;
-                let side = state.slot_side(i as u8).unwrap();
-                let ob_order = get_orderbook_line(orderbook, order_id, side.into()).await;
+                let side = self.state.slot_side(i as u8).unwrap();
+                let ob_order = get_orderbook_line(orderbook, order_id, side.into());
 
                 if ob_order.is_some() {
                     let ob_order = ob_order.unwrap();
@@ -180,7 +171,7 @@ impl SerumOpenOrdersContext {
     pub fn new(account: &Pubkey, state: OpenOrders) -> Self {
         Self {
             account: *account,
-            state: RwLock::new(state),
+            state,
         }
     }
 
@@ -200,22 +191,19 @@ impl SerumOpenOrdersContext {
     /// ### Errors
     ///
     /// This function will return an error if the account data is invalid.
-    pub async fn reload_from_account_data(&mut self, account_data: &[u8]) {
-        let new_state = parse_dex_account::<OpenOrders>(account_data);
-
-        let mut state = self.state.write().await;
-        *state = new_state;
+    pub fn reload_from_account_data(&mut self, account_data: &[u8]) {
+        self.state = parse_dex_account::<OpenOrders>(account_data);
     }
 }
 
-async fn get_orderbook_line(
+fn get_orderbook_line(
     orderbook: &dyn GenericOrderBook,
     order_id: u128,
     side: Side,
 ) -> Option<Order> {
     match side {
         Side::Bid => {
-            let bids = orderbook.get_bids().await;
+            let bids = orderbook.get_bids();
 
             for order in bids.iter() {
                 if order.order_id == order_id {
@@ -226,7 +214,7 @@ async fn get_orderbook_line(
             None
         }
         Side::Ask => {
-            let asks = orderbook.get_asks().await;
+            let asks = orderbook.get_asks();
 
             for order in asks.iter() {
                 if order.order_id == order_id {

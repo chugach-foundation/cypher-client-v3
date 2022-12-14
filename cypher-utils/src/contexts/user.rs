@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use anchor_spl::token::{spl_token, TokenAccount};
 use cypher_client::{
     instructions::deposit_funds,
@@ -108,6 +110,16 @@ pub struct UserContext {
 
     pub account_ctx: AccountContext,
     pub sub_account_ctxs: Vec<SubAccountContext>,
+}
+
+impl Debug for UserContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("UserContext")
+            .field("authority", &format!("{}", self.authority))
+            .field("account", &format!("{}", self.account_ctx.address))
+            .field("sub_accounts", &format!("{}", self.sub_account_ctxs.len()))
+            .finish()
+    }
 }
 
 impl UserContext {
@@ -255,13 +267,12 @@ impl UserContext {
     /// ### Errors
     /// 
     /// This function will return an error if the account data is invalid.
-    pub fn reload_account_from_account_data(&mut self, account: &Pubkey, account_data: &[u8]) -> Result<(), ContextError> {
+    pub fn reload_account_from_account_data(&mut self, account: &Pubkey, account_data: &[u8])  {
         let account_state = get_zero_copy_account(account_data);
         self.account_ctx = AccountContext {
             address: *account,
             state: account_state,
         };
-        Ok(())
     }
 
     /// Reloads a [`CypherSubAccount`] from the given account data.
@@ -269,20 +280,26 @@ impl UserContext {
     /// ### Errors
     /// 
     /// This function will return an error if the account data is invalid.
-    pub fn reload_sub_account_from_account_data(&mut self, sub_account: &Pubkey, account_data: &[u8]) -> Result<(), ContextError> {
+    pub fn reload_sub_account_from_account_data(&mut self, sub_account: &Pubkey, account_data: &[u8])  {
         let new_sub_account_state = get_zero_copy_account(account_data);
         let new_sub_account_ctx = SubAccountContext {
             address: *sub_account,
             state: new_sub_account_state,
         };
 
-        for sub_account_ctx in self.sub_account_ctxs.iter_mut() {
-            if sub_account_ctx.address == *sub_account {
-                *sub_account_ctx = new_sub_account_ctx.clone();
+        if !self.sub_account_ctxs.iter().map(|sa| sa.address).collect::<Vec<_>>().contains(sub_account) {
+            for sub_account_cache in self.account_ctx.state.sub_account_caches.iter() {
+                if sub_account_cache.sub_account == *sub_account {
+                    self.sub_account_ctxs.push(new_sub_account_ctx.clone());
+                }
+            }
+        } else {
+            for sub_account_ctx in self.sub_account_ctxs.iter_mut() {
+                if sub_account_ctx.address == *sub_account {
+                    *sub_account_ctx = new_sub_account_ctx.clone();
+                }
             }
         }
-
-        Ok(())
     }
 
     /// Creates the a [`CypherSubAccount`], if an account number is provided

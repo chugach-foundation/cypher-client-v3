@@ -12,7 +12,7 @@ use cypher_client::{
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::accounts_cache::AccountsCache;
@@ -20,13 +20,12 @@ use crate::accounts_cache::AccountsCache;
 use super::ContextError;
 
 /// A trait that can be used to generically get data for both AOB and Serum Order Books.
-#[async_trait]
-pub trait GenericOrderBook: Send {
+pub trait GenericOrderBook: Send + Sync {
     /// Gets the bids on the book.
-    async fn get_bids(&self) -> Vec<Order>;
+    fn get_bids(&self) -> Vec<Order>;
 
     /// Gets the asks on the book.
-    async fn get_asks(&self) -> Vec<Order>;
+    fn get_asks(&self) -> Vec<Order>;
 }
 
 /// Represents an order.
@@ -46,6 +45,20 @@ pub struct Order {
     pub client_order_id: u64,
     /// The maximum timestamp at which it can be filled.
     pub max_ts: u64,
+}
+
+impl Debug for Order {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Order")
+            .field("side", &format!("{:?}", self.side))
+            .field("price", &format!("{}", self.price))
+            .field("base_quantity", &format!("{}", self.base_quantity))
+            .field("quote_quantity", &format!("{}", self.quote_quantity))
+            .field("order_id", &format!("{}", self.order_id))
+            .field("client_order_id", &format!("{}", self.client_order_id))
+            .field("max_ts", &format!("{}", self.max_ts))
+            .finish()
+    }
 }
 
 /// Gets orders from the AOB's [`Slab`] for a given [`Market`].
@@ -130,9 +143,48 @@ pub struct OrderBook {
     pub asks: Vec<Order>,
 }
 
+impl Debug for OrderBook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OrderBook")
+            .field("bids_count", &format!("{}", self.bids.len(),))
+            .field("asks_count", &format!("{}", self.asks.len()))
+            .finish()
+    }
+}
+
 impl OrderBook {
     pub fn new(bids: Vec<Order>, asks: Vec<Order>) -> Self {
         Self { bids, asks }
+    }
+
+    /// Gets the native impact price for the given size and order side.
+    /// The returning value, if it exists, already represents the lot price.
+    ///
+    /// If not enough liquidity is available on the book to match the requested size,
+    /// this method returns none.
+    pub fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
+        let mut cumulative_size = 0;
+        let mut impact_price;
+
+        if side == Side::Ask {
+            for bid in self.bids.iter() {
+                impact_price = bid.price;
+                cumulative_size += bid.base_quantity;
+                if cumulative_size >= size {
+                    return Some(impact_price);
+                }
+            }
+        } else {
+            for ask in self.asks.iter() {
+                impact_price = ask.price;
+                cumulative_size += ask.base_quantity;
+                if cumulative_size >= size {
+                    return Some(impact_price);
+                }
+            }
+        }
+
+        None
     }
 }
 
@@ -141,7 +193,7 @@ pub struct AgnosticOrderBookContext {
     pub market: Pubkey,
     pub bids: Pubkey,
     pub asks: Pubkey,
-    pub state: RwLock<OrderBook>,
+    pub state: OrderBook,
 }
 
 impl Default for AgnosticOrderBookContext {
@@ -150,21 +202,18 @@ impl Default for AgnosticOrderBookContext {
             market: Pubkey::default(),
             bids: Pubkey::default(),
             asks: Pubkey::default(),
-            state: RwLock::new(OrderBook::default()),
+            state: OrderBook::default(),
         }
     }
 }
 
-#[async_trait]
 impl GenericOrderBook for AgnosticOrderBookContext {
-    async fn get_bids(&self) -> Vec<Order> {
-        let state = self.state.read().await;
-        state.bids.clone()
+    fn get_bids(&self) -> Vec<Order> {
+        self.state.bids.clone()
     }
 
-    async fn get_asks(&self) -> Vec<Order> {
-        let state = self.state.read().await;
-        state.bids.clone()
+    fn get_asks(&self) -> Vec<Order> {
+        self.state.asks.clone()
     }
 }
 
@@ -175,7 +224,7 @@ impl AgnosticOrderBookContext {
             market: *market,
             bids: *bids,
             asks: *asks,
-            state: RwLock::new(state),
+            state
         }
     }
 
@@ -268,12 +317,39 @@ impl AgnosticOrderBookContext {
         ))
     }
 
+    /// Loads one [`Side`] of the [`AgnosticOrderBookContext`] from the given account data.
+    pub fn from_account_data(
+        market: &Pubkey,
+        bids: &Pubkey,
+        asks: &Pubkey,
+        market_state: &dyn Market,
+        data: &[u8],
+        side: Side,
+    ) -> Self {
+        let account_tag = if side == Side::Bid {
+            AccountTag::Bids
+        } else {
+            AccountTag::Asks
+        };
+        let mut data = data.to_vec().clone();
+        let side_state: AobSlab<CallBackInfo> = load_book_side(&mut data, account_tag);
+
+        let orders = get_aob_orders(market_state, side_state, side);
+
+        let book = if side == Side::Bid {
+            OrderBook::new(orders, Vec::new())
+        } else {
+            OrderBook::new(Vec::new(), orders)
+        };
+        Self::new(market, bids, asks, book)
+    }
+
     /// Reloads one [`Side`] of the [`AgnosticOrderBookContext`] from the given account data.
     ///
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_account_data(
+    pub fn reload_from_account_data(
         &mut self,
         market_state: &dyn Market,
         data: &[u8],
@@ -288,14 +364,13 @@ impl AgnosticOrderBookContext {
         let side_state: AobSlab<CallBackInfo> = load_book_side(&mut data, account_tag);
 
         let opposite_side_state = if side == Side::Bid {
-            self.state.read().await.asks.clone() // take the asks if we're updating the bids
+            self.state.asks.clone() // take the asks if we're updating the bids
         } else {
-            self.state.read().await.bids.clone() // take the bids if we're updating the asks
+            self.state.bids.clone() // take the bids if we're updating the asks
         };
 
         let orders = get_aob_orders(market_state, side_state, side);
-        let mut state = self.state.write().await;
-        *state = if side == Side::Bid {
+        self.state = if side == Side::Bid {
             OrderBook::new(orders, opposite_side_state)
         } else {
             OrderBook::new(opposite_side_state, orders)
@@ -308,7 +383,7 @@ impl AgnosticOrderBookContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_cache(
+    pub fn reload_from_cache(
         &mut self,
         cache: Arc<AccountsCache>,
         market_state: &dyn Market,
@@ -334,8 +409,7 @@ impl AgnosticOrderBookContext {
         let bid_orders = get_aob_orders(market_state, bids_state, Side::Bid);
         let ask_orders = get_aob_orders(market_state, asks_state, Side::Ask);
 
-        let mut state = self.state.write().await;
-        *state = OrderBook::new(bid_orders, ask_orders);
+        self.state = OrderBook::new(bid_orders, ask_orders);
 
         Ok(())
     }
@@ -345,30 +419,8 @@ impl AgnosticOrderBookContext {
     ///
     /// If not enough liquidity is available on the book to match the requested size,
     /// this method returns none.
-    pub async fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
-        let mut cumulative_size = 0;
-        let mut impact_price;
-
-        let state = self.state.read().await;
-
-        if side == Side::Ask {
-            for bid in state.bids.iter() {
-                impact_price = bid.price;
-                cumulative_size += bid.base_quantity;
-                if cumulative_size >= size {
-                    return Some(impact_price);
-                }
-            }
-        } else {
-            for ask in state.asks.iter() {
-                impact_price = ask.price;
-                cumulative_size += ask.base_quantity;
-                if cumulative_size >= size {
-                    return Some(impact_price);
-                }
-            }
-        }
-        None
+    pub fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
+        self.state.get_impact_price(size, side)
     }
 }
 
@@ -377,7 +429,7 @@ pub struct SerumOrderBookContext {
     pub market: Pubkey,
     pub bids: Pubkey,
     pub asks: Pubkey,
-    pub state: RwLock<OrderBook>,
+    pub state: OrderBook,
 }
 
 impl Default for SerumOrderBookContext {
@@ -386,21 +438,18 @@ impl Default for SerumOrderBookContext {
             market: Pubkey::default(),
             bids: Pubkey::default(),
             asks: Pubkey::default(),
-            state: RwLock::new(OrderBook::default()),
+            state: OrderBook::default(),
         }
     }
 }
 
-#[async_trait]
 impl GenericOrderBook for SerumOrderBookContext {
-    async fn get_bids(&self) -> Vec<Order> {
-        let state = self.state.read().await;
-        state.bids.clone()
+    fn get_bids(&self) -> Vec<Order> {
+        self.state.bids.clone()
     }
 
-    async fn get_asks(&self) -> Vec<Order> {
-        let state = self.state.read().await;
-        state.bids.clone()
+    fn get_asks(&self) -> Vec<Order> {
+        self.state.asks.clone()
     }
 }
 
@@ -411,7 +460,7 @@ impl SerumOrderBookContext {
             market: *market,
             bids: *bids,
             asks: *asks,
-            state: RwLock::new(state),
+            state
         }
     }
 
@@ -513,7 +562,7 @@ impl SerumOrderBookContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_account_data(
+    pub fn reload_from_account_data(
         &mut self,
         market_state: &MarketState,
         data: &[u8],
@@ -524,19 +573,41 @@ impl SerumOrderBookContext {
         let side_state = Slab::new(side_data);
 
         let opposite_side_state = if side == Side::Bid {
-            self.state.read().await.asks.clone() // take the asks if we're updating the bids
+            self.state.asks.clone() // take the asks if we're updating the bids
         } else {
-            self.state.read().await.bids.clone() // take the bids if we're updating the asks
+            self.state.bids.clone() // take the bids if we're updating the asks
         };
 
         let orders = get_serum_orders(market_state, side_state, side);
 
-        let mut state = self.state.write().await;
-        *state = if side == Side::Bid {
+        self.state = if side == Side::Bid {
             OrderBook::new(orders, opposite_side_state)
         } else {
             OrderBook::new(opposite_side_state, orders)
         };
+    }
+
+    /// Loads one [`Side`] of the [`SerumOrderBookContext`] from the given account data.
+    pub fn from_account_data(
+        market: &Pubkey,
+        bids: &Pubkey,
+        asks: &Pubkey,
+        market_state: &MarketState,
+        data: &[u8],
+        side: Side,
+    ) -> Self {
+        let (_side_head, side_data, _side_tail) = array_refs![&data, 5; ..; 7];
+        let side_data = &mut side_data[8..].to_vec().clone();
+        let side_state = Slab::new(side_data);
+
+        let orders = get_serum_orders(market_state, side_state, side);
+
+        let book = if side == Side::Bid {
+            OrderBook::new(orders, Vec::new())
+        } else {
+            OrderBook::new(Vec::new(), orders)
+        };
+        Self::new(market, bids, asks, book)
     }
 
     /// Reloads the [`SerumOrderBookContext`] from the given [`AccountsCache`],
@@ -545,7 +616,7 @@ impl SerumOrderBookContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub async fn reload_from_cache(
+    pub fn reload_from_cache(
         &mut self,
         market_state: &MarketState,
         cache: Arc<AccountsCache>,
@@ -573,8 +644,7 @@ impl SerumOrderBookContext {
         let bid_orders = get_serum_orders(market_state, bids_state, Side::Bid);
         let ask_orders = get_serum_orders(market_state, asks_state, Side::Ask);
 
-        let mut state = self.state.write().await;
-        *state = OrderBook::new(bid_orders, ask_orders);
+        self.state = OrderBook::new(bid_orders, ask_orders);
 
         Ok(())
     }
@@ -584,29 +654,7 @@ impl SerumOrderBookContext {
     ///
     /// If not enough liquidity is available on the book to match the requested size,
     /// this method returns none.
-    pub async fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
-        let mut cumulative_size = 0;
-        let mut impact_price;
-
-        let state = self.state.read().await;
-
-        if side == Side::Ask {
-            for bid in state.bids.iter() {
-                impact_price = bid.price;
-                cumulative_size += bid.base_quantity;
-                if cumulative_size >= size {
-                    return Some(impact_price);
-                }
-            }
-        } else {
-            for ask in state.asks.iter() {
-                impact_price = ask.price;
-                cumulative_size += ask.base_quantity;
-                if cumulative_size >= size {
-                    return Some(impact_price);
-                }
-            }
-        }
-        None
+    pub fn get_impact_price(&self, size: u64, side: Side) -> Option<u64> {
+        self.state.get_impact_price(size, side)
     }
 }

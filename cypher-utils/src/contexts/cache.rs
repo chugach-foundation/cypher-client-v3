@@ -1,7 +1,7 @@
 use cypher_client::{cache_account, utils::get_zero_copy_account, Cache, CacheAccount};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{accounts_cache::AccountsCache, utils::get_cypher_zero_copy_account};
 
@@ -10,6 +10,14 @@ use super::ContextError;
 #[derive(Clone)]
 pub struct CacheContext {
     pub state: Box<CacheAccount>,
+}
+
+impl Debug for CacheContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CacheContext")
+            .field("address", &format!("{}", cache_account::id()))
+            .finish()
+    }
 }
 
 impl Default for CacheContext {

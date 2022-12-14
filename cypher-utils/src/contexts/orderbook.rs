@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use cypher_client::{
     aob::{load_book_side, CallBackInfo},
     serum::Slab,
-    Market, Side,
+    Market, Side, OrderType,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;

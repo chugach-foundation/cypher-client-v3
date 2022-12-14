@@ -266,7 +266,7 @@ impl StreamingAccountInfoService {
                     data: info.data,
                     slot: res.context.slot,
                 },
-            );
+            ).await;
         }
 
         Ok(())
@@ -329,7 +329,7 @@ impl SubscriptionHandler {
                             account: self.account,
                             data: account_data,
                             slot: account_res.context.slot,
-                        });
+                        }).await;
                     }
                 },
                 _ = shutdown_receiver.recv() => {

@@ -72,7 +72,7 @@ impl GenericEventQueue for AgnosticEventQueueContext {
         let mut fills = Vec::new();
 
         for event in events.iter() {
-            if event.maker_order_id != u128::default() && event.base_size != 0 {
+            if event.maker_order_id != u128::default() && event.base_size != 0 && event.quote_size != 0 {
                 let aob_side = AobSide::from_u8(event.taker_side).unwrap();
                 let taker_side = if aob_side == AobSide::Ask {
                     Side::Ask
@@ -99,7 +99,7 @@ impl GenericEventQueue for AgnosticEventQueueContext {
         let mut fills = Vec::new();
 
         for event in sliced_events {
-            if event.maker_order_id != u128::default() && event.base_size != 0{
+            if event.maker_order_id != u128::default() && event.base_size != 0 && event.quote_size != 0 {
                 let aob_side = AobSide::from_u8(event.taker_side).unwrap();
                 let taker_side = if aob_side == AobSide::Ask {
                     Side::Ask

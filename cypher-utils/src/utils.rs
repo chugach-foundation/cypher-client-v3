@@ -112,7 +112,7 @@ pub async fn get_program_accounts(
                 filters: Some(filters),
                 account_config: RpcAccountInfoConfig {
                     encoding: Some(UiAccountEncoding::Base64),
-                    commitment: Some(CommitmentConfig::default()),
+                    commitment: Some(CommitmentConfig::confirmed()),
                     ..RpcAccountInfoConfig::default()
                 },
                 ..RpcProgramAccountsConfig::default()
@@ -244,7 +244,6 @@ pub async fn send_transactions(
     let mut txn_builder = TransactionBuilder::new();
     let mut submitted: bool = false;
     let mut signatures: Vec<Signature> = Vec::new();
-    let mut prev_tx: Transaction = Transaction::default();
 
     let blockhash = match rpc_client.get_latest_blockhash().await {
         Ok(h) => h,
@@ -259,11 +258,12 @@ pub async fn send_transactions(
             // we do this to attempt to pack as many ixs in a tx as possible
             // there's more efficient ways to do it but we'll do it in the future
             if tx.message_data().len() > 1000 {
-                let res = send_transaction(rpc_client, &prev_tx, confirm).await;
+                let res = send_transaction(rpc_client, &tx, confirm).await;
                 match res {
                     Ok(s) => {
                         submitted = true;
                         txn_builder.clear();
+                        txn_builder.add(ix);
                         signatures.push(s);
                     }
                     Err(e) => {
@@ -275,7 +275,6 @@ pub async fn send_transactions(
                 }
             } else {
                 txn_builder.add(ix);
-                prev_tx = tx;
             }
         } else {
             txn_builder.add(ix);

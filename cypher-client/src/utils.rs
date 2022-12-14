@@ -25,6 +25,7 @@ pub fn adjust_decimals(value: I80F48, decimals: u8) -> I80F48 {
     }
 }
 
+#[inline(always)]
 pub fn convert_price_to_lots(
     price: u64,
     base_multiplier: u64,
@@ -32,6 +33,26 @@ pub fn convert_price_to_lots(
     quote_multiplier: u64,
 ) -> u64 {
     (price * base_multiplier) / (coin_decimals_factor * quote_multiplier)
+}
+
+#[inline(always)]
+pub fn convert_coin_to_lots(coin: u64, coin_lot_size: u64) -> u64 {
+    coin / coin_lot_size
+}
+
+#[inline(always)]
+pub fn convert_pc_to_lots(pc: u64, pc_lot_size: u64) -> u64 {
+    pc / pc_lot_size
+}
+
+#[inline(always)]
+pub fn convert_coin_to_decimals(coin: u64, coin_lot_size: u64) -> u64 {
+    coin * coin_lot_size
+}
+
+#[inline(always)]
+pub fn convert_pc_to_decimals(pc: u64, pc_lot_size: u64) -> u64 {
+    pc * pc_lot_size
 }
 
 pub fn fixed_to_ui(number: I80F48, decimals: u8) -> I80F48 {

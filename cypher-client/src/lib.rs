@@ -942,7 +942,7 @@ impl PerpetualMarket {
     }
 }
 
-pub trait Market {
+pub trait Market: Send + Sync {
     fn event_queue(&self) -> Pubkey;
     fn unscale_base_amount(&self, base_amount: u64) -> Option<u64>;
     fn unscale_quote_amount(&self, quote_amount: u64) -> Option<u64>;

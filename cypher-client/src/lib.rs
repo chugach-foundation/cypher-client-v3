@@ -91,7 +91,7 @@ pub mod dex {
 pub mod cache_account {
     use anchor_lang::declare_id;
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("2QuTN3vMXqpGCk2ZWRK1FLS3aFYRPBntrQndrajLYMXs");
+    declare_id!("BePqNU6sg4z9XqCV41ajieGzNFpUxSh7SNRYnXV1J5oG");
 }
 
 pub mod wrapped_sol {

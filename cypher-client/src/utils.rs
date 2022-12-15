@@ -36,6 +36,18 @@ pub fn convert_price_to_lots(
 }
 
 #[inline(always)]
+pub fn convert_price_to_decimals(
+    price: u64,
+    coin_lot_size: u64,
+    coin_decimals_factor: u64,
+    pc_lot_size: u64,
+) -> u64 {
+    let mid = u128::from(price);
+    let res = mid * pc_lot_size as u128 * coin_decimals_factor as u128 / coin_lot_size as u128;
+    res.try_into().unwrap()
+}
+
+#[inline(always)]
 pub fn convert_coin_to_lots(coin: u64, coin_lot_size: u64) -> u64 {
     coin / coin_lot_size
 }

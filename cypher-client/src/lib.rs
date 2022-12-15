@@ -46,7 +46,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("cyph3csHEsARwU551odmdu6LGPqqfa6C5qQqqzHhheC");
+declare_id!("4hCGgvvexudANNnhVxNZT4198EGvgcADmseyGMoVYRE5");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;
@@ -340,6 +340,36 @@ impl PartialEq for DerivativeOrderType {
             (DerivativeOrderType::PostOnly, DerivativeOrderType::ImmediateOrCancel) => true,
             (DerivativeOrderType::PostOnly, DerivativeOrderType::FillOrKill) => true,
             (DerivativeOrderType::PostOnly, DerivativeOrderType::PostOnly) => false,
+        }
+    }
+}
+
+impl PartialEq for OrderType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (OrderType::Limit, OrderType::Limit) => true,
+            (OrderType::Limit, OrderType::ImmediateOrCancel) => false,
+            (OrderType::Limit, OrderType::PostOnly) => false,
+            (OrderType::ImmediateOrCancel, OrderType::Limit) => false,
+            (OrderType::ImmediateOrCancel, OrderType::ImmediateOrCancel) => true,
+            (OrderType::ImmediateOrCancel, OrderType::PostOnly) => false,
+            (OrderType::PostOnly, OrderType::Limit) => false,
+            (OrderType::PostOnly, OrderType::ImmediateOrCancel) => false,
+            (OrderType::PostOnly, OrderType::PostOnly) => true,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (OrderType::Limit, OrderType::Limit) => false,
+            (OrderType::Limit, OrderType::ImmediateOrCancel) => true,
+            (OrderType::Limit, OrderType::PostOnly) => true,
+            (OrderType::ImmediateOrCancel, OrderType::Limit) => true,
+            (OrderType::ImmediateOrCancel, OrderType::ImmediateOrCancel) => false,
+            (OrderType::ImmediateOrCancel, OrderType::PostOnly) => true,
+            (OrderType::PostOnly, OrderType::Limit) => true,
+            (OrderType::PostOnly, OrderType::ImmediateOrCancel) => true,
+            (OrderType::PostOnly, OrderType::PostOnly) => false,
         }
     }
 }

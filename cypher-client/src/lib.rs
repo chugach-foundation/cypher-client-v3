@@ -46,7 +46,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("4hCGgvvexudANNnhVxNZT4198EGvgcADmseyGMoVYRE5");
+declare_id!("J3sqitigvu8LCaZMMbqe3EJ3jkxtgmrD33imEgo9EHZf");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;
@@ -91,7 +91,7 @@ pub mod dex {
 pub mod cache_account {
     use anchor_lang::declare_id;
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("BePqNU6sg4z9XqCV41ajieGzNFpUxSh7SNRYnXV1J5oG");
+    declare_id!("D5PjhWiJZwz1YeGKhnpaGAhuSJ4Napyjeru2Qx9Hv5rb");
 }
 
 pub mod wrapped_sol {

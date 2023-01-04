@@ -46,7 +46,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("J3sqitigvu8LCaZMMbqe3EJ3jkxtgmrD33imEgo9EHZf");
+declare_id!("HbwiS4uqygLmr5LSJCTzZUDqw2vgKgkaE9S9co9y2DKp");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;
@@ -91,7 +91,7 @@ pub mod dex {
 pub mod cache_account {
     use anchor_lang::declare_id;
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("D5PjhWiJZwz1YeGKhnpaGAhuSJ4Napyjeru2Qx9Hv5rb");
+    declare_id!("85eeFZYoZKofEMjc3kWnavcp2t9sq8HurUfbGQ15LHEk");
 }
 
 pub mod wrapped_sol {
@@ -940,11 +940,6 @@ impl Pool {
 }
 
 impl FuturesMarket {
-    /// the open interest
-    pub fn open_interest(&self) -> I80F48 {
-        I80F48::from_bits(self.open_interest)
-    }
-
     /// the twap price
     pub fn market_price(&self) -> I80F48 {
         I80F48::from_bits(self.market_price)
@@ -956,11 +951,6 @@ impl FuturesMarket {
 }
 
 impl PerpetualMarket {
-    /// the open interest
-    pub fn open_interest(&self) -> I80F48 {
-        I80F48::from_bits(self.open_interest)
-    }
-
     /// the long funding
     pub fn long_funding(&self) -> I80F48 {
         I80F48::from_bits(self.long_funding)

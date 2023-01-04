@@ -1,10 +1,8 @@
 use anchor_spl::dex::serum_dex::state::OpenOrders;
-use async_trait::async_trait;
 use cypher_client::{
     serum::parse_dex_account, utils::get_zero_copy_account, OpenOrder, OrdersAccount, Side,
 };
 use solana_sdk::pubkey::Pubkey;
-use tokio::sync::RwLock;
 
 use super::{GenericOrderBook, Order};
 
@@ -32,6 +30,10 @@ impl Default for AgnosticOpenOrdersContext {
                 authority: Pubkey::default(),
                 market: Pubkey::default(),
                 master_account: Pubkey::default(),
+                maker_base_volume: u64::default(),
+                maker_quote_volume: u64::default(),
+                taker_base_volume: u64::default(),
+                taker_quote_volume: u64::default(),
                 base_token_free: [0; 24],
                 base_token_locked: [0; 24],
                 quote_token_free: [0; 24],

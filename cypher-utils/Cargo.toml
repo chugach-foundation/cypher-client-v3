@@ -14,8 +14,8 @@ mainnet-beta = []
 
 [dependencies]
 agnostic-orderbook = { git = "https://github.com/chugach-foundation/agnostic-orderbook.git" }
-anchor-lang = "0.25.0"
-anchor-spl = { version = "0.25.0", features = [ "token", "associated_token", "dex" ]}
+anchor-lang = "0.26.0"
+anchor-spl = { version = "0.26.0", features = [ "token", "associated_token", "dex" ]}
 arrayref = "0.3.6"
 async-trait = "0.1.58"
 base64 = "0.13.0"
@@ -26,8 +26,8 @@ dashmap = "5.3.4"
 futures = "0.3.21"
 log = "0.4.17"
 num-traits = "0.2"
-solana-account-decoder = "~1.10.25"
-solana-client = "~1.10.25"
-solana-sdk = "~1.10.25"
+solana-account-decoder = "~1.14.11"
+solana-client = "~1.14.11"
+solana-sdk = "~1.14.11"
 thiserror = "1.0.31"
 tokio = "1.14.1"

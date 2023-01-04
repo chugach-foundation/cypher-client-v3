@@ -7,7 +7,7 @@ use cypher_client::{
 };
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_filter::RpcFilterType};
 use solana_sdk::pubkey::Pubkey;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{
     accounts_cache::AccountsCache,
@@ -24,6 +24,14 @@ use super::ContextError;
 pub struct MarketContext<T> {
     pub address: Pubkey,
     pub state: Box<T>,
+}
+
+impl<T> Debug for MarketContext<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MarketContext{T}")
+            .field("address", &format!("{}", self.address))
+            .finish()
+    }
 }
 
 impl<T> MarketContext<T>
@@ -183,7 +191,7 @@ where
 }
 
 /// Represents a Serum Market
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct SpotMarketContext {
     pub address: Pubkey,
     pub bids: Pubkey,

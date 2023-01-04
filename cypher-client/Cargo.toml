@@ -18,8 +18,8 @@ mainnet-beta = [ "cpi" ]
 [dependencies]
 agnostic-orderbook = { git = "https://github.com/chugach-foundation/agnostic-orderbook.git" }
 anchor-gen = "0.3.0"
-anchor-lang = "0.25"
-anchor-spl = { version = "0.25.0", features = [ "token", "associated_token", "dex" ] }
+anchor-lang = "0.26"
+anchor-spl = { version = "0.26.0", features = [ "token", "associated_token", "dex" ] }
 arrayref = "0.3.6"
 bonfida-utils = "0.2.14"
 bytemuck = "1.4.0"

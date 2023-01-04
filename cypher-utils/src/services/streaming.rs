@@ -13,14 +13,10 @@ use {
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey},
     std::sync::Arc,
     tokio::sync::{
-        broadcast::{channel, Receiver, Sender},
+        broadcast::{channel, error::SendError, Receiver, Sender},
         RwLock,
     },
 };
-
-use std::any::type_name;
-
-use tokio::sync::broadcast::error::SendError;
 
 use crate::{
     accounts_cache::{AccountState, AccountsCache},
@@ -82,8 +78,7 @@ impl StreamingAccountInfoService {
             Ok(()) => (),
             Err(e) => {
                 warn!(
-                    "{} - There was an error while fetching initial account infos: {}",
-                    type_name::<Self>(),
+                    "There was an error while fetching initial account infos: {}",
                     e.to_string()
                 );
             }
@@ -106,8 +101,7 @@ impl StreamingAccountInfoService {
                     Ok(_) => (),
                     Err(e) => {
                         warn!(
-                            "{} - There was an error running subscription handler for account {}: {}",
-                            type_name::<Self>(),
+                            "There was an error running subscription handler for account {}: {}",
                             cloned_handler.account,
                             e.to_string()
                         );
@@ -124,15 +118,15 @@ impl StreamingAccountInfoService {
 
         tokio::select! {
             _ = shutdown_receiver.recv() => {
-                info!("{} - Shutting down subscription handlers.", type_name::<Self>());
+                info!("Shutting down subscription handlers.");
                 let handlers = self.handlers.read().await;
                 for handler in handlers.iter() {
                     match handler.stop().await {
                         Ok(_) => (),
                         Err(e) => {
                             warn!(
-                                "{} - There was an error removing subscription handler for account {}: {}", 
-                                type_name::<Self>(),
+                                "There was an error removing subscription handler for account {}: {}",
+
                                 handler.account,
                                 e.to_string()
                             );
@@ -151,8 +145,7 @@ impl StreamingAccountInfoService {
             Ok(()) => (),
             Err(e) => {
                 warn!(
-                    "{} - There was an error while fetching new account infos: {}", 
-                    type_name::<Self>(),
+                    "There was an error while fetching new account infos: {}",
                     e.to_string()
                 );
             }
@@ -173,8 +166,7 @@ impl StreamingAccountInfoService {
                     Ok(_) => (),
                     Err(e) => {
                         warn!(
-                            "{} - There was an error running subscription handler for account {}: {}", 
-                            type_name::<Self>(),
+                            "There was an error running subscription handler for account {}: {}",
                             cloned_handler.account,
                             e.to_string()
                         );
@@ -198,8 +190,7 @@ impl StreamingAccountInfoService {
                     Ok(_) => (),
                     Err(e) => {
                         warn!(
-                            "{} - There was an error removing subscription handler for account {}: {}",
-                            type_name::<Self>(),
+                            "There was an error removing subscription handler for account {}: {}",
                             handler.account,
                             e.to_string()
                         );
@@ -234,13 +225,13 @@ impl StreamingAccountInfoService {
         let res = match rpc_result {
             Ok(r) => r,
             Err(e) => {
-                warn!("{} - Could not fetch account infos: {}", type_name::<Self>(), e.to_string());
+                warn!("Could not fetch account infos: {}", e.to_string());
                 return Err(e);
             }
         };
 
         let mut infos = res.value;
-        info!("{} - Fetched {} account infos.", type_name::<Self>(), infos.len());
+        info!("Fetched {} account infos.", infos.len());
 
         while !infos.is_empty() {
             let next = infos.pop().unwrap();
@@ -250,23 +241,20 @@ impl StreamingAccountInfoService {
             let info = match next {
                 Some(ai) => ai,
                 None => {
-                    warn!(
-                        "{} - [{}/{}] An account info was missing!!",
-                        type_name::<Self>(),
-                        i,
-                        infos.len()
-                    );
+                    warn!("[{}/{}] An account info was missing!!", i, infos.len());
                     continue;
                 }
             };
-            self.cache.insert(
-                key,
-                AccountState {
-                    account: key,
-                    data: info.data,
-                    slot: res.context.slot,
-                },
-            ).await;
+            self.cache
+                .insert(
+                    key,
+                    AccountState {
+                        account: key,
+                        data: info.data,
+                        slot: res.context.slot,
+                    },
+                )
+                .await;
         }
 
         Ok(())
@@ -324,7 +312,7 @@ impl SubscriptionHandler {
                     if update.is_some() {
                         let account_res = update.unwrap();
                         let account_data = get_account_info(&account_res.value).unwrap();
-                        info!("{} - Received account update for {}, updating cache.", type_name::<Self>(), self.account);
+                        info!("Received account update for {}, updating cache.",  self.account);
                         self.cache.insert(self.account, AccountState {
                             account: self.account,
                             data: account_data,
@@ -333,7 +321,7 @@ impl SubscriptionHandler {
                     }
                 },
                 _ = shutdown_receiver.recv() => {
-                    info!("{} - Shutting down subscription handler for {}", type_name::<Self>(), self.account);
+                    info!("Shutting down subscription handler for {}",  self.account);
                     break;
                 }
             }

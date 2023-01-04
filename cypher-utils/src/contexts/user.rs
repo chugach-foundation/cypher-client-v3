@@ -288,11 +288,7 @@ impl UserContext {
         };
 
         if !self.sub_account_ctxs.iter().map(|sa| sa.address).collect::<Vec<_>>().contains(sub_account) {
-            for sub_account_cache in self.account_ctx.state.sub_account_caches.iter() {
-                if sub_account_cache.sub_account == *sub_account {
-                    self.sub_account_ctxs.push(new_sub_account_ctx.clone());
-                }
-            }
+            self.sub_account_ctxs.push(new_sub_account_ctx.clone());
         } else {
             for sub_account_ctx in self.sub_account_ctxs.iter_mut() {
                 if sub_account_ctx.address == *sub_account {

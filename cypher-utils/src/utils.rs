@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator, Owner, ZeroCopy};
 use bytemuck::Pod;
 use cypher_client::serum::parse_dex_account;
@@ -24,10 +26,10 @@ use {
 
 #[derive(Debug, Error)]
 pub enum KeypairError {
-    #[error("Error opening keypair file.")]
-    FileOpen,
-    #[error("Error reading keypair file.")]
-    FileRead,
+    #[error("Error opening keypair file: {:?}", self)]
+    FileOpen(std::io::Error),
+    #[error("Error reading keypair file: {:?}", self)]
+    FileRead(std::io::Error),
     #[error("Provided keypair file contents do not match keypair length.")]
     SizeMismatch,
     #[error("Error loading keypair.")]
@@ -62,21 +64,24 @@ pub const KEYPAIR_LENGTH: usize = 64;
 ///
 /// \[123, 34, 78, 0, 1, 3, 45 (...)\]
 #[inline(always)]
-pub fn load_keypair(path: &str) -> Result<Keypair, KeypairError> {
+pub fn load_keypair<P>(path: P) -> Result<Keypair, KeypairError>
+where
+    P: AsRef<Path>,
+{
     let fd = File::open(path);
 
     let mut file = match fd {
         Ok(f) => f,
-        Err(_) => {
-            return Err(KeypairError::FileOpen);
+        Err(e) => {
+            return Err(KeypairError::FileOpen(e));
         }
     };
 
     let file_string = &mut String::new();
     let file_read_res = file.read_to_string(file_string);
 
-    let _ = if let Err(_) = file_read_res {
-        return Err(KeypairError::FileRead);
+    let _ = if let Err(e) = file_read_res {
+        return Err(KeypairError::FileRead(e));
     };
 
     let keypair_bytes: Vec<u8> = file_string

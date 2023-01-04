@@ -1,7 +1,7 @@
 use cypher_client::{utils::get_zero_copy_account, Pool, PoolNode};
 use solana_client::{nonblocking::rpc_client::RpcClient, rpc_filter::RpcFilterType};
 use solana_sdk::pubkey::Pubkey;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crate::{
     accounts_cache::AccountsCache,
@@ -17,6 +17,14 @@ use super::ContextError;
 pub struct PoolNodeContext {
     pub address: Pubkey,
     pub state: Box<PoolNode>,
+}
+
+impl Debug for PoolNodeContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PoolNodeContext")
+            .field("address", &format!("{}", self.address))
+            .finish()
+    }
 }
 
 impl PoolNodeContext {
@@ -117,7 +125,7 @@ impl PoolNodeContext {
     }
 
     /// Reloads the [`PoolNode`]'s state from the given account data.
-    pub async fn reload_from_account_data(&mut self, account_data: &[u8]) {
+    pub fn reload_from_account_data(&mut self, account_data: &[u8]) {
         self.state = get_zero_copy_account::<PoolNode>(account_data);
     }
 
@@ -147,6 +155,14 @@ pub struct PoolContext {
     pub address: Pubkey,
     pub state: Box<Pool>,
     pub pool_nodes: Vec<PoolNodeContext>,
+}
+
+impl Debug for PoolContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PoolContext")
+            .field("address", &format!("{}", self.address))
+            .finish()
+    }
 }
 
 impl PoolContext {
@@ -230,7 +246,8 @@ impl PoolContext {
         let filters = vec![RpcFilterType::DataSize(
             std::mem::size_of::<Pool>() as u64 + 8,
         )];
-        let mut pools = match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await {
+        let mut pools = match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await
+        {
             Ok(s) => s
                 .iter()
                 .map(|state| {
@@ -247,7 +264,8 @@ impl PoolContext {
         };
 
         for pool_ctx in pools.iter_mut() {
-            let nodes = pool_ctx.state
+            let nodes = pool_ctx
+                .state
                 .nodes
                 .iter()
                 .filter(|n| n.pool_node != Pubkey::default())
@@ -284,15 +302,18 @@ impl PoolContext {
     }
 
     /// Reloads the given [`PoolNode`] state from the given account data.
-    pub async fn reload_pool_node_from_account_data(
-        &mut self,
-        pool_node: &Pubkey,
-        account_data: &[u8],
-    ) {
-        if !self.pool_nodes.iter().map(|pnc| pnc.address).collect::<Vec<_>>().contains(pool_node) {
+    pub fn reload_pool_node_from_account_data(&mut self, pool_node: &Pubkey, account_data: &[u8]) {
+        if !self
+            .pool_nodes
+            .iter()
+            .map(|pnc| pnc.address)
+            .collect::<Vec<_>>()
+            .contains(pool_node)
+        {
             for n in self.state.nodes.iter() {
                 if n.pool_node == *pool_node {
-                    self.pool_nodes.push(PoolNodeContext::from_account_data(account_data, pool_node));
+                    self.pool_nodes
+                        .push(PoolNodeContext::from_account_data(account_data, pool_node));
                 }
             }
         } else {

@@ -34,6 +34,19 @@ pub fn convert_price_to_lots(
 ) -> u64 {
     (price * base_multiplier) / (coin_decimals_factor * quote_multiplier)
 }
+#[inline(always)]
+pub fn convert_price_to_lots_fixed(
+    price: I80F48,
+    base_multiplier: u64,
+    coin_decimals_factor: u64,
+    quote_multiplier: u64,
+) -> u64 {
+    price
+        .checked_mul(I80F48::from(base_multiplier))
+        .and_then(|n| n.checked_div(I80F48::from(coin_decimals_factor * quote_multiplier)))
+        .unwrap()
+        .to_num()
+}
 
 #[inline(always)]
 pub fn convert_price_to_decimals(

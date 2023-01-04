@@ -1,12 +1,12 @@
-use std::{any::type_name, sync::Arc};
-
-use tokio::sync::RwLock;
-
 use {
     dashmap::{mapref::one::Ref, DashMap},
     log::{info, warn},
     solana_sdk::pubkey::Pubkey,
-    tokio::sync::broadcast::{channel, Receiver, Sender},
+    std::sync::Arc,
+    tokio::sync::{
+        broadcast::{channel, Receiver, Sender},
+        RwLock,
+    },
 };
 
 #[derive(Debug, PartialEq)]
@@ -23,7 +23,6 @@ pub struct SubscriptionMap {
 pub struct AccountsCache {
     map: DashMap<Pubkey, AccountState>,
     subscriptions: RwLock<Vec<SubscriptionMap>>,
-    sender: Sender<AccountState>,
 }
 
 /// Represent's an on-chain Account's state at a given slot.
@@ -42,7 +41,6 @@ impl AccountsCache {
         Self {
             map: DashMap::default(),
             subscriptions: RwLock::new(Vec::new()),
-            sender: channel::<AccountState>(u16::MAX as usize).0,
         }
     }
 
@@ -51,7 +49,6 @@ impl AccountsCache {
         AccountsCache {
             map: DashMap::new(),
             subscriptions: RwLock::new(Vec::new()),
-            sender: channel::<AccountState>(u16::MAX as usize).0,
         }
     }
 
@@ -59,7 +56,10 @@ impl AccountsCache {
     pub async fn subscribe(&self, accounts: &[Pubkey]) -> Receiver<AccountState> {
         let mut subscriptions = self.subscriptions.write().await;
         let sender = Arc::new(channel::<AccountState>(u16::MAX as usize).0);
-        subscriptions.push(SubscriptionMap { accounts: accounts.to_vec(), sender: sender.clone() });
+        subscriptions.push(SubscriptionMap {
+            accounts: accounts.to_vec(),
+            sender: sender.clone(),
+        });
         sender.subscribe()
     }
 
@@ -76,11 +76,7 @@ impl AccountsCache {
         if maybe_state.is_some() {
             let state = maybe_state.unwrap();
             if state.slot > data.slot {
-                info!(
-                    "{} - Attempted to update key: {} with older data!",
-                    type_name::<Self>(),
-                    key
-                );
+                info!("Attempted to update key: {} with older data!", key);
                 return;
             }
         }
@@ -89,16 +85,11 @@ impl AccountsCache {
             if sub.accounts.contains(&key) {
                 match sub.sender.send(data.clone()) {
                     Ok(r) => {
-                        info!(
-                            "{} - Sent updated Account state to {} recievers.",
-                            type_name::<Self>(),
-                            r
-                        );
+                        info!("Sent updated Account state to {} recievers.", r);
                     }
                     Err(_) => {
                         warn!(
-                            "{} - Failed to send message about updated Account {}",
-                            type_name::<Self>(),
+                            "Failed to send message about updated Account {}",
                             key.to_string()
                         );
                     }

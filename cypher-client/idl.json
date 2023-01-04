@@ -1454,6 +1454,31 @@
       "args": []
     },
     {
+      "name": "setClearingFeeTiers",
+      "accounts": [
+        {
+          "name": "clearing",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "feeTiers",
+          "type": {
+            "vec": {
+              "defined": "FeeTierArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "setLiquidityMiningInfo",
       "accounts": [
         {
@@ -2556,7 +2581,7 @@
       ]
     },
     {
-      "name": "pruneOrders",
+      "name": "pruneFuturesOrders",
       "accounts": [
         {
           "name": "clearing",
@@ -2850,6 +2875,77 @@
       ]
     },
     {
+      "name": "prunePerpOrders",
+      "accounts": [
+        {
+          "name": "clearing",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "cacheAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "masterAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "subAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "openOrders",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderbook",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "eventQueue",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bids",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "asks",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "quotePoolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "limit",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "settlePerpFunds",
       "accounts": [
         {
@@ -2886,11 +2982,42 @@
           "name": "quotePoolNode",
           "isMut": true,
           "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settleFunding",
+      "accounts": [
+        {
+          "name": "cacheAccount",
+          "isMut": false,
+          "isSigner": false
         },
         {
-          "name": "authority",
+          "name": "masterAccount",
           "isMut": true,
-          "isSigner": true
+          "isSigner": false
+        },
+        {
+          "name": "subAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "openOrders",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "quotePoolNode",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": []
@@ -2992,11 +3119,13 @@
             "type": "publicKey"
           },
           {
-            "name": "quoteMint",
-            "docs": [
-              "the mint of the token used as the quote mint condition for position margining"
-            ],
-            "type": "publicKey"
+            "name": "padding3",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
           },
           {
             "name": "feeTiers",
@@ -3169,11 +3298,13 @@
             "type": "u64"
           },
           {
-            "name": "openInterest",
-            "docs": [
-              "the total open interest in native units"
-            ],
-            "type": "i128"
+            "name": "padding2",
+            "type": {
+              "array": [
+                "u64",
+                2
+              ]
+            }
           },
           {
             "name": "totalRaised",
@@ -3232,16 +3363,9 @@
             "type": {
               "array": [
                 "u64",
-                8
+                10
               ]
             }
-          },
-          {
-            "name": "openInterest",
-            "docs": [
-              "the total open interest in the market"
-            ],
-            "type": "i128"
           },
           {
             "name": "minFunding",
@@ -3394,6 +3518,34 @@
               "the master account pubkey"
             ],
             "type": "publicKey"
+          },
+          {
+            "name": "makerBaseVolume",
+            "docs": [
+              "the accumulated maker base token volume"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "makerQuoteVolume",
+            "docs": [
+              "the accumulated maker quote token volume"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "takerBaseVolume",
+            "docs": [
+              "the accumulated taker base token volume"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "takerQuoteVolume",
+            "docs": [
+              "the accumulated taker quote token volume"
+            ],
+            "type": "u64"
           },
           {
             "name": "baseTokenFree",
@@ -3658,11 +3810,13 @@
             "type": "publicKey"
           },
           {
-            "name": "tokenVault",
-            "docs": [
-              "the address of the token vault"
-            ],
-            "type": "publicKey"
+            "name": "padding2",
+            "type": {
+              "array": [
+                "u64",
+                4
+              ]
+            }
           },
           {
             "name": "oracleProducts",
@@ -3686,7 +3840,7 @@
             "type": "publicKey"
           },
           {
-            "name": "padding2",
+            "name": "padding3",
             "type": {
               "array": [
                 "u64",
@@ -3758,7 +3912,7 @@
             "type": "u64"
           },
           {
-            "name": "padding3",
+            "name": "padding4",
             "type": {
               "array": [
                 "u64",
@@ -4332,13 +4486,6 @@
             "type": "publicKey"
           },
           {
-            "name": "quoteMint",
-            "docs": [
-              "the quote mint for the clearing"
-            ],
-            "type": "publicKey"
-          },
-          {
             "name": "clearingType",
             "docs": [
               "the clearing type"
@@ -4458,6 +4605,20 @@
               "the maximum funding rate for this market, in percentage"
             ],
             "type": "i8"
+          },
+          {
+            "name": "maxBaseOrderSize",
+            "docs": [
+              "the maximum order base size for non-postOnly orders"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "maxQuoteOrderSize",
+            "docs": [
+              "the maximum order quote size for non-postOnly orders"
+            ],
+            "type": "u64"
           },
           {
             "name": "decimals",
@@ -4606,6 +4767,20 @@
             "name": "quoteMultiplier",
             "docs": [
               "the quote multiplier for the market"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "maxBaseOrderSize",
+            "docs": [
+              "the maximum order base size for non-postOnly orders"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "maxQuoteOrderSize",
+            "docs": [
+              "the maximum order quote size for non-postOnly orders"
             ],
             "type": "u64"
           },
@@ -4836,15 +5011,6 @@
             }
           },
           {
-            "name": "selfTradeBehavior",
-            "docs": [
-              "the self trade behavior"
-            ],
-            "type": {
-              "defined": "SelfTradeBehavior"
-            }
-          },
-          {
             "name": "clientOrderId",
             "docs": [
               "the client order id"
@@ -4914,18 +5080,7 @@
           {
             "name": "oraclePrice",
             "docs": [
-              "the latest price",
-              "",
-              "this unit is interpreted as how many quote tokens in native amount that 1 base token in native amount is worth",
-              "so for example for SOL oracle price feed",
-              "",
-              "it should be quoted at about 30_000 for a real price of $30 taking into account 3 `oracle_decimals`",
-              "",
-              "holding 1 native amount of the base token would be worth roughly 30_000 of the quote token in native amount",
-              "",
-              "holding 1*10^3 native amount of the base token would be worth roughly 1*10^3 * 30_000 which accounting for quote token decimals",
-              "",
-              "would be ( (1*10^3) * 30_000) / 10^6 -> (1_000 * 30_000) / 1_000_000 -> 30_000_000 / 1_000_000 -> 30 quote tokens"
+              "the latest price"
             ],
             "type": "i128"
           },
@@ -5564,11 +5719,25 @@
             "type": "u64"
           },
           {
+            "name": "maxBaseOrderSize",
+            "docs": [
+              "the maximum order base size for non-postOnly orders"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "maxQuoteOrderSize",
+            "docs": [
+              "the maximum order quote size for non-postOnly orders"
+            ],
+            "type": "u64"
+          },
+          {
             "name": "padding4",
             "type": {
               "array": [
                 "u64",
-                10
+                8
               ]
             }
           }
@@ -6440,11 +6609,6 @@
           "index": false
         },
         {
-          "name": "quoteMint",
-          "type": "publicKey",
-          "index": false
-        },
-        {
           "name": "feeMint",
           "type": "publicKey",
           "index": false
@@ -6836,6 +7000,31 @@
           "type": {
             "defined": "Side"
           },
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "FundingPaymentLog",
+      "fields": [
+        {
+          "name": "market",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "account",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "subAccount",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "i128",
           "index": false
         }
       ]
@@ -7239,8 +7428,21 @@
     },
     {
       "code": 6079,
+      "name": "BaseSizeExceedsMarketLimit",
+      "msg": "the order's base size exceeds the market's limit for non-postOnly orders"
+    },
+    {
+      "code": 6080,
+      "name": "QuoteSizeExceedsMarketLimit",
+      "msg": "the order's quote size exceeds the market's limit for non-postOnly orders"
+    },
+    {
+      "code": 6081,
       "name": "Default",
       "msg": "Default"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "HbwiS4uqygLmr5LSJCTzZUDqw2vgKgkaE9S9co9y2DKp"
+  }
 }

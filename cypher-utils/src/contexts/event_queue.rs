@@ -3,7 +3,6 @@ use anchor_spl::dex::serum_dex::{
     matching::Side as DexSide,
     state::{Event, EventView, QueueHeader},
 };
-use async_trait::async_trait;
 use cypher_client::{
     aob::{parse_aob_event_queue, CallBackInfo},
     serum::{parse_dex_event_queue, remove_dex_account_padding},
@@ -13,7 +12,6 @@ use num_traits::cast::FromPrimitive;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use crate::accounts_cache::AccountsCache;
 
@@ -38,9 +36,6 @@ pub struct Fill {
 pub trait GenericEventQueue: Send + Sync {
     /// Gets the fills in the Event Queue.
     fn get_fills(&self) -> Vec<Fill>;
-
-    /// Gets the fills in the Event Queue that have occurred since the given sequence number.
-    fn get_fills_since(&self, seq: u64) -> Vec<Fill>;
 }
 
 /// Represents an AOB Event Queue.
@@ -72,34 +67,10 @@ impl GenericEventQueue for AgnosticEventQueueContext {
         let mut fills = Vec::new();
 
         for event in events.iter() {
-            if event.maker_order_id != u128::default() && event.base_size != 0 && event.quote_size != 0 {
-                let aob_side = AobSide::from_u8(event.taker_side).unwrap();
-                let taker_side = if aob_side == AobSide::Ask {
-                    Side::Ask
-                } else {
-                    Side::Bid
-                };
-                fills.push(Fill {
-                    base_quantity: event.base_size,
-                    quote_quantity: event.quote_size,
-                    price: event.quote_size / event.base_size,
-                    taker_side,
-                    maker_order_id: event.maker_order_id,
-                });
-            }
-        }
-
-        fills
-    }
-
-    fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
-        let head = self.head;
-        let events = &self.events;
-        let (sliced_events, _) = events.split_at(head as usize);
-        let mut fills = Vec::new();
-
-        for event in sliced_events {
-            if event.maker_order_id != u128::default() && event.base_size != 0 && event.quote_size != 0 {
+            if event.maker_order_id != u128::default()
+                && event.base_size != 0
+                && event.quote_size != 0
+            {
                 let aob_side = AobSide::from_u8(event.taker_side).unwrap();
                 let taker_side = if aob_side == AobSide::Ask {
                     Side::Ask
@@ -173,11 +144,7 @@ impl AgnosticEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub fn from_account_data(
-        market: &Pubkey,
-        event_queue: &Pubkey,
-        data: &[u8],
-    ) -> Self {
+    pub fn from_account_data(market: &Pubkey, event_queue: &Pubkey, data: &[u8]) -> Self {
         let (eq_header, fills, callbacks) = parse_aob_event_queue(&data);
 
         Self::new(
@@ -240,10 +207,7 @@ impl AgnosticEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub fn reload_from_cache(
-        &mut self,
-        cache: Arc<AccountsCache>,
-    ) -> Result<(), ContextError> {
+    pub fn reload_from_cache(&mut self, cache: Arc<AccountsCache>) -> Result<(), ContextError> {
         let eq_state = match cache.get(&self.event_queue) {
             Some(a) => a,
             None => {
@@ -344,69 +308,6 @@ impl GenericEventQueue for SerumEventQueueContext {
 
         fills
     }
-
-    fn get_fills_since(&self, seq: u64) -> Vec<Fill> {
-        let head = self.head;
-        let events = &self.events;
-        let (sliced_events, _) = events.split_at(head as usize);
-        let mut fills = Vec::new();
-
-        for event in sliced_events {
-            match event.as_view() {
-                Ok(a) => {
-                    match a {
-                        EventView::Fill {
-                            side,
-                            maker,
-                            native_qty_paid,
-                            native_qty_received,
-                            order_id,
-                            ..
-                        } => {
-                            if order_id != u128::default() {
-                                let taker_side = if maker {
-                                    // is maker
-                                    if side == DexSide::Ask {
-                                        Side::Bid
-                                    } else {
-                                        Side::Ask
-                                    }
-                                } else {
-                                    // not maker
-                                    if side == DexSide::Ask {
-                                        Side::Ask
-                                    } else {
-                                        Side::Bid
-                                    }
-                                };
-                                let base_quantity = if side == DexSide::Ask {
-                                    native_qty_received
-                                } else {
-                                    native_qty_paid
-                                };
-                                let quote_quantity = if side == DexSide::Ask {
-                                    native_qty_paid
-                                } else {
-                                    native_qty_received
-                                };
-                                fills.push(Fill {
-                                    base_quantity,
-                                    quote_quantity,
-                                    price: quote_quantity / base_quantity,
-                                    taker_side,
-                                    maker_order_id: order_id,
-                                });
-                            }
-                        }
-                        _ => continue,
-                    }
-                }
-                Err(_) => continue,
-            };
-        }
-
-        fills
-    }
 }
 
 impl SerumEventQueueContext {
@@ -461,11 +362,7 @@ impl SerumEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub fn from_account_data(
-        market: &Pubkey,
-        event_queue: &Pubkey,
-        data: &[u8],
-    ) -> Self {
+    pub fn from_account_data(market: &Pubkey, event_queue: &Pubkey, data: &[u8]) -> Self {
         let data_words = remove_dex_account_padding(data);
         let (header, seg0, seg1) = parse_dex_event_queue(&data_words);
 
@@ -529,10 +426,7 @@ impl SerumEventQueueContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub fn reload_from_cache(
-        &mut self,
-        cache: Arc<AccountsCache>,
-    ) -> Result<(), ContextError> {
+    pub fn reload_from_cache(&mut self, cache: Arc<AccountsCache>) -> Result<(), ContextError> {
         let eq_state = match cache.get(&self.event_queue) {
             Some(a) => a,
             None => {

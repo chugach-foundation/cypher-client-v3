@@ -17,6 +17,7 @@ use super::{CacheContext, ContextError, MarketContext, PoolContext, SpotMarketCo
 ///
 /// Consider loading all of the Pools and Markets once and then using the [`PubsubClient`]
 /// or even the [`StreamingAccountInfoService`] to subscribe to these accounts instead of polling.
+#[derive(Default)]
 pub struct CypherContext {
     pub cache: RwLock<CacheContext>,
     pub pools: RwLock<Vec<PoolContext>>,

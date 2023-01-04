@@ -16,7 +16,7 @@ use crate::{
         CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount, DepositDeliverable,
         DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder,
         NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetOracleProducts,
-        SetSubAccountDelegate, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
+        SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
         SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
         TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
         UpdateTokenIndex, WithdrawFunds,
@@ -818,7 +818,6 @@ pub fn settle_perp_funds(
     market: &Pubkey,
     open_orders: &Pubkey,
     quote_pool_node: &Pubkey,
-    authority: &Pubkey,
 ) -> Instruction {
     let accounts = SettlePerpFunds {
         clearing: *clearing,
@@ -828,9 +827,32 @@ pub fn settle_perp_funds(
         market: *market,
         open_orders: *open_orders,
         quote_pool_node: *quote_pool_node,
-        authority: *authority,
     };
     let ix_data = crate::instruction::SettlePerpFunds {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn settle_funding(
+    cache_account: &Pubkey,
+    master_account: &Pubkey,
+    sub_account: &Pubkey,
+    market: &Pubkey,
+    open_orders: &Pubkey,
+    quote_pool_node: &Pubkey,
+) -> Instruction {
+    let accounts = SettleFunding {
+        cache_account: *cache_account,
+        master_account: *master_account,
+        sub_account: *sub_account,
+        market: *market,
+        open_orders: *open_orders,
+        quote_pool_node: *quote_pool_node,
+    };
+    let ix_data = crate::instruction::SettleFunding {};
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

@@ -4,16 +4,14 @@ use agnostic_orderbook::state::{
 };
 use anchor_spl::dex::serum_dex::state::MarketState;
 use arrayref::array_refs;
-use async_trait::async_trait;
 use cypher_client::{
     aob::{load_book_side, CallBackInfo},
     serum::Slab,
-    Market, Side, OrderType,
+    Market, Side,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 use std::{fmt::Debug, sync::Arc};
-use tokio::sync::RwLock;
 
 use crate::accounts_cache::AccountsCache;
 
@@ -224,7 +222,7 @@ impl AgnosticOrderBookContext {
             market: *market,
             bids: *bids,
             asks: *asks,
-            state
+            state,
         }
     }
 
@@ -349,12 +347,7 @@ impl AgnosticOrderBookContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
-    pub fn reload_from_account_data(
-        &mut self,
-        market_state: &dyn Market,
-        data: &[u8],
-        side: Side,
-    ) {
+    pub fn reload_from_account_data(&mut self, market_state: &dyn Market, data: &[u8], side: Side) {
         let account_tag = if side == Side::Bid {
             AccountTag::Bids
         } else {
@@ -460,7 +453,7 @@ impl SerumOrderBookContext {
             market: *market,
             bids: *bids,
             asks: *asks,
-            state
+            state,
         }
     }
 

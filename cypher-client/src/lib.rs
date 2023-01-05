@@ -146,6 +146,26 @@ impl PartialEq for SubAccountMargining {
     }
 }
 
+impl PartialEq for SettlementType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (SettlementType::CashSettled, SettlementType::CashSettled) => true,
+            (SettlementType::CashSettled, SettlementType::PhysicalDelivery) => false,
+            (SettlementType::PhysicalDelivery, SettlementType::CashSettled) => false,
+            (SettlementType::PhysicalDelivery, SettlementType::PhysicalDelivery) => true,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (SettlementType::CashSettled, SettlementType::CashSettled) => false,
+            (SettlementType::CashSettled, SettlementType::PhysicalDelivery) => true,
+            (SettlementType::PhysicalDelivery, SettlementType::CashSettled) => true,
+            (SettlementType::PhysicalDelivery, SettlementType::PhysicalDelivery) => false,
+        }
+    }
+}
+
 impl PartialEq for MarketType {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

@@ -1,5 +1,11 @@
 use fixed::types::I80F48;
 
+pub const ONE_MINUTE: u64 = 60;
+pub const ONE_HOUR: u64 = ONE_MINUTE * 60;
+pub const ONE_DAY: u64 = ONE_HOUR * 24;
+pub const ONE_WEEK: u64 = ONE_DAY * 7;
+pub const ONE_YEAR: u64 = ONE_DAY * 365;
+
 pub const INV_ONE_HUNDRED_FIXED: I80F48 = I80F48::from_bits(2_814_749_767_106_i128);
 pub const INV_TEN_THOUSAND_FIXED: I80F48 = I80F48::from_bits(28_147_497_671_i128);
 pub const INV_ONE_DECIMAL_ADJ_FIXED: I80F48 = I80F48::from_bits(28147497671065);

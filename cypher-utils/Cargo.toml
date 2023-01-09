@@ -9,8 +9,8 @@ version = "0.1.0"
 
 [features]
 default = [ "devnet" ]
-devnet = [ "anchor-spl/devnet" ]
-mainnet-beta = []
+devnet = [ "anchor-spl/devnet", "cypher-client/devnet" ]
+mainnet-beta = [ "cypher-client/mainnet-beta" ]
 
 [dependencies]
 agnostic-orderbook = { git = "https://github.com/chugach-foundation/agnostic-orderbook.git" }

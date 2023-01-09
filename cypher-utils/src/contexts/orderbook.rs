@@ -82,10 +82,9 @@ fn get_aob_orders(market: &dyn Market, slab: AobSlab<CallBackInfo>, side: Side) 
             let quote_quantity = market
                 .get_quote_from_base(base_quantity, scaled_price)
                 .unwrap();
-            let price = quote_quantity / base_quantity;
             vec.push(Order {
                 side,
-                price,
+                price: scaled_price >> 32,
                 base_quantity,
                 quote_quantity,
                 order_id: node.key,

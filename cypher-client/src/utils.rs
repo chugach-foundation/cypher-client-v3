@@ -34,6 +34,7 @@ pub fn convert_price_to_lots(
 ) -> u64 {
     (price * base_multiplier) / (coin_decimals_factor * quote_multiplier)
 }
+
 #[inline(always)]
 pub fn convert_price_to_lots_fixed(
     price: I80F48,
@@ -42,7 +43,8 @@ pub fn convert_price_to_lots_fixed(
     quote_multiplier: u64,
 ) -> u64 {
     price
-        .checked_mul(I80F48::from(base_multiplier))
+        .checked_mul(I80F48::from(10u64.pow(QUOTE_TOKEN_DECIMALS as u32)))
+        .and_then(|n| n.checked_mul(I80F48::from(base_multiplier)))
         .and_then(|n| n.checked_div(I80F48::from(coin_decimals_factor * quote_multiplier)))
         .unwrap()
         .to_num()
@@ -51,67 +53,93 @@ pub fn convert_price_to_lots_fixed(
 #[inline(always)]
 pub fn convert_price_to_decimals(
     price: u64,
-    coin_lot_size: u64,
+    base_multiplier: u64,
     coin_decimals_factor: u64,
-    pc_lot_size: u64,
+    quote_multiplier: u64,
 ) -> u64 {
-    let res =
-        price as u128 * pc_lot_size as u128 * coin_decimals_factor as u128 / coin_lot_size as u128;
+    let res = price as u128 * quote_multiplier as u128 * coin_decimals_factor as u128
+        / base_multiplier as u128;
     res as u64
 }
 
 #[inline(always)]
-pub fn convert_coin_to_lots(coin: u64, coin_lot_size: u64) -> u64 {
-    coin / coin_lot_size
-}
-
-#[inline(always)]
-pub fn convert_pc_to_lots(pc: u64, pc_lot_size: u64) -> u64 {
-    pc / pc_lot_size
-}
-
-#[inline(always)]
-pub fn convert_coin_to_decimals(coin: u64, coin_lot_size: u64) -> u64 {
-    coin * coin_lot_size
-}
-
-#[inline(always)]
-pub fn convert_pc_to_decimals(pc: u64, pc_lot_size: u64) -> u64 {
-    pc * pc_lot_size
-}
-
-pub fn fixed_to_ui(number: I80F48, decimals: u8) -> I80F48 {
-    number / I80F48::from_num::<u64>(10_u64.checked_pow(decimals as u32).unwrap())
-}
-
-pub fn fixed_to_ui_price(number: I80F48, base_decimals: u8, quote_decimals: u8) -> I80F48 {
-    number
-        .checked_mul(I80F48::from_num::<u64>(
-            10_u64.checked_pow(base_decimals as u32).unwrap(),
-        ))
-        .and_then(|n| {
-            n.checked_div(I80F48::from_num::<u64>(
-                10_u64.checked_pow(quote_decimals as u32).unwrap(),
-            ))
-        })
+pub fn convert_price_to_decimals_fixed(
+    price: u64,
+    base_multiplier: u64,
+    coin_decimals_factor: u64,
+    quote_multiplier: u64,
+) -> I80F48 {
+    I80F48::from(price)
+        .checked_mul(I80F48::from(quote_multiplier))
+        .and_then(|n| n.checked_mul(I80F48::from(coin_decimals_factor)))
+        .and_then(|n| n.checked_div(I80F48::from(base_multiplier)))
         .unwrap()
 }
 
+#[inline(always)]
+pub fn convert_coin_to_lots_fixed(coin: I80F48, base_multiplier: u64) -> u64 {
+    coin.checked_div(I80F48::from(base_multiplier))
+        .unwrap()
+        .to_num::<u64>()
+}
+
+#[inline(always)]
+pub fn convert_coin_to_lots(coin: u64, base_multiplier: u64) -> u64 {
+    coin / base_multiplier
+}
+
+#[inline(always)]
+pub fn convert_pc_to_lots_fixed(pc: I80F48, quote_multiplier: u64) -> u64 {
+    pc.checked_div(I80F48::from(quote_multiplier))
+        .unwrap()
+        .to_num::<u64>()
+}
+
+#[inline(always)]
+pub fn convert_pc_to_lots(pc: u64, quote_multiplier: u64) -> u64 {
+    pc / quote_multiplier
+}
+
+#[inline(always)]
+pub fn convert_coin_to_decimals_fixed(coin: u64, base_multiplier: u64) -> I80F48 {
+    I80F48::from(coin)
+        .checked_mul(I80F48::from(base_multiplier))
+        .unwrap()
+}
+
+#[inline(always)]
+pub fn convert_coin_to_decimals(coin: u64, base_multiplier: u64) -> u64 {
+    coin * base_multiplier
+}
+
+#[inline(always)]
+pub fn convert_pc_to_decimals_fixed(pc: u64, quote_multiplier: u64) -> I80F48 {
+    I80F48::from(pc)
+        .checked_mul(I80F48::from(quote_multiplier))
+        .unwrap()
+}
+
+#[inline(always)]
+pub fn convert_pc_to_decimals(pc: u64, quote_multiplier: u64) -> u64 {
+    pc * quote_multiplier
+}
+
+#[inline(always)]
 pub fn native_to_ui(number: u64, decimals: u8) -> u64 {
     number / 10_u64.checked_pow(decimals as u32).unwrap()
 }
 
-pub fn native_to_ui_price(number: u64, base_decimals: u8, quote_decimals: u8) -> I80F48 {
+#[inline(always)]
+pub fn native_to_ui_fixed(number: u64, decimals: u8) -> I80F48 {
     I80F48::from_num::<u64>(number)
-        .checked_mul(I80F48::from_num::<u64>(
-            10_u64.checked_pow(base_decimals as u32).unwrap(),
+        .checked_div(I80F48::from_num::<u64>(
+            10_u64.checked_pow(decimals as u32).unwrap(),
         ))
-        .and_then(|n| {
-            n.checked_div(I80F48::from_num::<u64>(
-                10_u64.checked_pow(quote_decimals as u32).unwrap(),
-            ))
-        })
         .unwrap()
+}
+
+pub fn fixed_to_ui(number: I80F48, decimals: u8) -> I80F48 {
+    number / I80F48::from_num::<u64>(10_u64.checked_pow(decimals as u32).unwrap())
 }
 
 pub fn get_zero_copy_account<T: ZeroCopy + Owner>(account_data: &[u8]) -> Box<T> {
@@ -129,6 +157,7 @@ pub fn get_program_account<
 ) -> Box<T> {
     Box::new(<T>::try_deserialize(account_data).unwrap())
 }
+
 pub fn gen_dex_vault_signer_key(nonce: u64, dex_market: &Pubkey) -> Result<Pubkey> {
     let seeds = [dex_market.as_ref(), bytes_of(&nonce)];
     Ok(Pubkey::create_program_address(&seeds, &dex::id()).unwrap())

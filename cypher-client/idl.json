@@ -1454,6 +1454,27 @@
       "args": []
     },
     {
+      "name": "setClearingAuthority",
+      "accounts": [
+        {
+          "name": "clearing",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
       "name": "setClearingFeeTiers",
       "accounts": [
         {
@@ -1479,13 +1500,50 @@
       ]
     },
     {
-      "name": "setLiquidityMiningInfo",
+      "name": "setClearingFeeMint",
       "accounts": [
         {
           "name": "clearing",
           "isMut": true,
           "isSigner": false
         },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "feeMint",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "setFuturesMarketAuthority",
+      "accounts": [
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "setFuturesMarketLiquidityMiningInfo",
+      "accounts": [
         {
           "name": "market",
           "isMut": true,
@@ -1502,6 +1560,264 @@
           "name": "args",
           "type": {
             "defined": "LiquidityMiningArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setFuturesMarketParams",
+      "accounts": [
+        {
+          "name": "cache",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "maxBaseOrderSize",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "maxQuoteOrderSize",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "initAssetWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "maintAssetWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "initLiabWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "maintLiabWeight",
+          "type": {
+            "option": "u8"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setFuturesMarketStatus",
+      "accounts": [
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "status",
+          "type": {
+            "defined": "OperatingStatus"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPerpetualMarketAuthority",
+      "accounts": [
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
+      "name": "setPerpetualMarketLiquidityMiningInfo",
+      "accounts": [
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": "LiquidityMiningArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPerpetualMarketParams",
+      "accounts": [
+        {
+          "name": "cache",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "impactQuantity",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "maxBaseOrderSize",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "maxQuoteOrderSize",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "initAssetWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "maintAssetWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "initLiabWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "maintLiabWeight",
+          "type": {
+            "option": "u8"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPerpetualMarketStatus",
+      "accounts": [
+        {
+          "name": "market",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "status",
+          "type": {
+            "defined": "OperatingStatus"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPoolNodeStatus",
+      "accounts": [
+        {
+          "name": "poolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "status",
+          "type": {
+            "defined": "OperatingStatus"
+          }
+        }
+      ]
+    },
+    {
+      "name": "setPoolStatus",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "status",
+          "type": {
+            "defined": "OperatingStatus"
           }
         }
       ]
@@ -3431,6 +3747,13 @@
             }
           },
           {
+            "name": "maxConfidenceInterval",
+            "docs": [
+              "the maximum confidence interval for the oracle price"
+            ],
+            "type": "f64"
+          },
+          {
             "name": "futuresMarket",
             "docs": [
               "the futures market associated with this oracle products account"
@@ -3644,11 +3967,17 @@
             "type": "u8"
           },
           {
+            "name": "operatingStatus",
+            "type": {
+              "defined": "OperatingStatus"
+            }
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u8",
-                12
+                11
               ]
             }
           },
@@ -3766,11 +4095,20 @@
             }
           },
           {
+            "name": "operatingStatus",
+            "docs": [
+              "the pool's operating status"
+            ],
+            "type": {
+              "defined": "OperatingStatus"
+            }
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u8",
-                15
+                14
               ]
             }
           },
@@ -4399,6 +4737,13 @@
               "the number of products that compose the oracle price feed"
             ],
             "type": "u8"
+          },
+          {
+            "name": "maxConfidenceInterval",
+            "docs": [
+              "the maxmimum confidence interval"
+            ],
+            "type": "f64"
           },
           {
             "name": "weights",
@@ -5432,11 +5777,20 @@
             "type": "u8"
           },
           {
+            "name": "operatingStatus",
+            "docs": [
+              "the operating status of the market"
+            ],
+            "type": {
+              "defined": "OperatingStatus"
+            }
+          },
+          {
             "name": "padding",
             "type": {
               "array": [
                 "u8",
-                5
+                4
               ]
             }
           }
@@ -5815,7 +6169,14 @@
           {
             "name": "poolNode",
             "docs": [
-              "the node"
+              "the node's pubkey"
+            ],
+            "type": "publicKey"
+          },
+          {
+            "name": "nodeVault",
+            "docs": [
+              "the node's vault pubkey"
             ],
             "type": "publicKey"
           },
@@ -5838,7 +6199,7 @@
             "type": {
               "array": [
                 "u64",
-                8
+                4
               ]
             }
           }
@@ -6359,6 +6720,9 @@
           },
           {
             "name": "Close"
+          },
+          {
+            "name": "StatusChange"
           }
         ]
       }
@@ -6376,6 +6740,9 @@
           },
           {
             "name": "RemoveNode"
+          },
+          {
+            "name": "StatusChange"
           },
           {
             "name": "Close"
@@ -6477,6 +6844,9 @@
         "kind": "enum",
         "variants": [
           {
+            "name": "Stub"
+          },
+          {
             "name": "Pyth"
           },
           {
@@ -6523,6 +6893,26 @@
           },
           {
             "name": "Whitelisted"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OperatingStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "ReduceOnly"
+          },
+          {
+            "name": "CancelOnly"
+          },
+          {
+            "name": "Halted"
           }
         ]
       }
@@ -7438,11 +7828,36 @@
     },
     {
       "code": 6081,
+      "name": "StaleOracleFeed",
+      "msg": "the given oracle feed account is stale"
+    },
+    {
+      "code": 6082,
+      "name": "ConfidenceIntervalExceeded",
+      "msg": "the confidence interval for the oracle price feed has been exceeded"
+    },
+    {
+      "code": 6083,
+      "name": "ReduceOnlyMode",
+      "msg": "the given instrument is in reduce only mode"
+    },
+    {
+      "code": 6084,
+      "name": "CancelOnlyMode",
+      "msg": "the given instrument is in cancel only mode"
+    },
+    {
+      "code": 6085,
+      "name": "HaltedMode",
+      "msg": "the given instrument has been halted"
+    },
+    {
+      "code": 6086,
       "name": "Default",
       "msg": "Default"
     }
   ],
   "metadata": {
-    "address": "HbwiS4uqygLmr5LSJCTzZUDqw2vgKgkaE9S9co9y2DKp"
+    "address": "6prLRRLSvwWLkCBc7V2B3FWi716AssNyPfp1NH88751v"
   }
 }

@@ -46,7 +46,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("HbwiS4uqygLmr5LSJCTzZUDqw2vgKgkaE9S9co9y2DKp");
+declare_id!("6prLRRLSvwWLkCBc7V2B3FWi716AssNyPfp1NH88751v");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;
@@ -90,8 +90,10 @@ pub mod dex {
 
 pub mod cache_account {
     use anchor_lang::declare_id;
+    #[cfg(feature = "mainnet-beta")]
+    declare_id!("6x5U4c41tfUYGEbTXofFiHcfyx3rqJZsT4emrLisNGGL");
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("85eeFZYoZKofEMjc3kWnavcp2t9sq8HurUfbGQ15LHEk");
+    declare_id!("3ac3b5RYdEogzXHr7xMESiyYKkDzXGShuSJWX1ZPWHRP");
 }
 
 pub mod wrapped_sol {
@@ -122,6 +124,36 @@ impl ToString for Side {
         match self {
             Side::Bid => "Bid".to_string(),
             Side::Ask => "Ask".to_string(),
+        }
+    }
+}
+
+impl PartialEq for ProductsType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ProductsType::Stub, ProductsType::Stub) => true,
+            (ProductsType::Stub, ProductsType::Pyth) => false,
+            (ProductsType::Stub, ProductsType::Switchboard) => false,
+            (ProductsType::Pyth, ProductsType::Pyth) => true,
+            (ProductsType::Pyth, ProductsType::Stub) => false,
+            (ProductsType::Pyth, ProductsType::Switchboard) => false,
+            (ProductsType::Switchboard, ProductsType::Switchboard) => true,
+            (ProductsType::Switchboard, ProductsType::Stub) => false,
+            (ProductsType::Switchboard, ProductsType::Pyth) => false,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ProductsType::Stub, ProductsType::Stub) => false,
+            (ProductsType::Stub, ProductsType::Pyth) => true,
+            (ProductsType::Stub, ProductsType::Switchboard) => true,
+            (ProductsType::Pyth, ProductsType::Pyth) => false,
+            (ProductsType::Pyth, ProductsType::Stub) => true,
+            (ProductsType::Pyth, ProductsType::Switchboard) => true,
+            (ProductsType::Switchboard, ProductsType::Switchboard) => false,
+            (ProductsType::Switchboard, ProductsType::Stub) => true,
+            (ProductsType::Switchboard, ProductsType::Pyth) => true,
         }
     }
 }
@@ -984,6 +1016,9 @@ impl PerpetualMarket {
 
 pub trait Market: Send + Sync {
     fn event_queue(&self) -> Pubkey;
+    fn base_multiplier(&self) -> u64;
+    fn quote_multiplier(&self) -> u64;
+    fn decimals(&self) -> u8;
     fn unscale_base_amount(&self, base_amount: u64) -> Option<u64>;
     fn unscale_quote_amount(&self, quote_amount: u64) -> Option<u64>;
     fn get_quote_from_base(&self, base_amount: u64, scaled_price_fp32: u64) -> Option<u64>;
@@ -1007,6 +1042,18 @@ impl Market for PerpetualMarket {
             .and_then(|n| n.checked_div(self.inner.base_multiplier as u128))
             .and_then(|n| n.try_into().ok())
     }
+
+    fn base_multiplier(&self) -> u64 {
+        self.inner.base_multiplier
+    }
+
+    fn quote_multiplier(&self) -> u64 {
+        self.inner.quote_multiplier
+    }
+
+    fn decimals(&self) -> u8 {
+        self.inner.config.decimals
+    }
 }
 
 impl Market for FuturesMarket {
@@ -1026,5 +1073,17 @@ impl Market for FuturesMarket {
             .and_then(|n| (n as u128).checked_mul(self.inner.quote_multiplier as u128))
             .and_then(|n| n.checked_div(self.inner.base_multiplier as u128))
             .and_then(|n| n.try_into().ok())
+    }
+
+    fn base_multiplier(&self) -> u64 {
+        self.inner.base_multiplier
+    }
+
+    fn quote_multiplier(&self) -> u64 {
+        self.inner.quote_multiplier
+    }
+
+    fn decimals(&self) -> u8 {
+        self.inner.config.decimals
     }
 }

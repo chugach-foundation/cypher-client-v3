@@ -9,10 +9,10 @@ version = "0.1.0"
 
 [features]
 cpi = [ "no-entrypoint" ]
-default = [ "cpi", "devnet" ]
-devnet = [ "anchor-spl/devnet" ]
 no-entrypoint = []
 no-idl = []
+default = [ "cpi", "devnet" ]
+devnet = [ "anchor-spl/devnet" ]
 mainnet-beta = [ "cpi" ]
 
 [dependencies]

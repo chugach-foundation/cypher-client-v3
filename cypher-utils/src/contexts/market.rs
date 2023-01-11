@@ -166,7 +166,7 @@ where
     }
 
     /// Reloads the [`T`]'s state from the given account data.
-    pub async fn reload_from_account_data(&mut self, account_data: &[u8]) {
+    pub fn reload_from_account_data(&mut self, account_data: &[u8]) {
         self.state = get_zero_copy_account::<T>(account_data);
     }
 

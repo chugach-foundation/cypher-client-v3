@@ -113,11 +113,7 @@ fn get_serum_orders(market: &MarketState, slab: &Slab, side: Side) -> Vec<Order>
     leafs
         .iter()
         .map(|l| {
-            let price = l
-                .price()
-                .checked_mul(market.pc_lot_size)
-                .and_then(|n| n.checked_div(market.coin_lot_size))
-                .unwrap();
+            let price = l.price();
             let base_quantity = l.quantity().checked_mul(market.coin_lot_size).unwrap();
             let quote_quantity = price.checked_mul(base_quantity).unwrap();
             Order {
@@ -165,6 +161,7 @@ impl OrderBook {
 
         if side == Side::Ask {
             for bid in self.bids.iter() {
+                println!("Price: {}", bid.price);
                 impact_price = bid.price;
                 cumulative_size += bid.base_quantity;
                 if cumulative_size >= size {
@@ -173,6 +170,7 @@ impl OrderBook {
             }
         } else {
             for ask in self.asks.iter() {
+                println!("Price: {}", ask.price);
                 impact_price = ask.price;
                 cumulative_size += ask.base_quantity;
                 if cumulative_size >= size {

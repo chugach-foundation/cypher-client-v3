@@ -15,15 +15,17 @@ use crate::{
         CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing, CreatePublicClearing,
         CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount, DepositDeliverable,
         DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder,
-        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetOracleProducts,
-        SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
-        SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
+        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
+        SetFuturesMarketStatus, SetOracleProducts, SetPerpetualMarketStatus, SetPoolNodeStatus,
+        SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
+        SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
         TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
         UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
     CreatePerpetualMarketArgs, CreatePoolArgs, NewDerivativeOrderArgs, NewSpotOrderArgs,
+    OperatingStatus,
 };
 
 pub fn create_public_clearing(
@@ -993,7 +995,6 @@ pub fn settle_spot_funds(
     coin_vault: &Pubkey,
     pc_vault: &Pubkey,
     dex_vault_signer: &Pubkey,
-    args: CancelOrderArgs,
 ) -> Instruction {
     let accounts = SettleSpotFunds {
         clearing: *clearing,
@@ -1016,7 +1017,7 @@ pub fn settle_spot_funds(
             dex_program: anchor_spl::dex::ID,
         },
     };
-    let ix_data = crate::instruction::CancelSpotOrder { _args: args };
+    let ix_data = crate::instruction::SettleSpotFunds {};
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),
@@ -1509,6 +1510,70 @@ pub fn close_sub_account(
         rent_destination: *rent_destination,
     };
     let ix_data = crate::instruction::CloseSubAccount {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_pool_status(pool: &Pubkey, authority: &Pubkey, status: OperatingStatus) -> Instruction {
+    let accounts = SetPoolStatus {
+        pool: *pool,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPoolStatus { _status: status };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_pool_node_status(
+    pool_node: &Pubkey,
+    authority: &Pubkey,
+    status: OperatingStatus,
+) -> Instruction {
+    let accounts = SetPoolNodeStatus {
+        pool_node: *pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPoolNodeStatus { _status: status };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_perpetual_market_status(
+    market: &Pubkey,
+    authority: &Pubkey,
+    status: OperatingStatus,
+) -> Instruction {
+    let accounts = SetPerpetualMarketStatus {
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPerpetualMarketStatus { _status: status };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_futures_market_status(
+    market: &Pubkey,
+    authority: &Pubkey,
+    status: OperatingStatus,
+) -> Instruction {
+    let accounts = SetFuturesMarketStatus {
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetFuturesMarketStatus { _status: status };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

@@ -4,7 +4,8 @@ use anchor_spl::token::{spl_token, TokenAccount};
 use cypher_client::{
     instructions::deposit_funds,
     utils::{
-        derive_pool_node_vault_address, derive_pool_node_vault_signer_address, derive_token_address, get_zero_copy_account,
+        derive_pool_node_vault_address, derive_pool_node_vault_signer_address,
+        derive_token_address, get_zero_copy_account,
     },
     wrapped_sol, DerivativePosition, PositionSlot, SpotPosition,
 };
@@ -191,7 +192,7 @@ impl UserContext {
             ),
         ];
 
-        let _ = send_transactions(&rpc_client, ixs, authority, true).await;
+        let _ = send_transactions(&rpc_client, ixs, authority, true, Some((1_400_000, 1))).await;
 
         UserContext::load(rpc_client, &authority.pubkey(), Some(account_number)).await
     }
@@ -263,11 +264,11 @@ impl UserContext {
     }
 
     /// Reloads the [`CypherAccount`] from the given account data.
-    /// 
+    ///
     /// ### Errors
-    /// 
+    ///
     /// This function will return an error if the account data is invalid.
-    pub fn reload_account_from_account_data(&mut self, account: &Pubkey, account_data: &[u8])  {
+    pub fn reload_account_from_account_data(&mut self, account: &Pubkey, account_data: &[u8]) {
         let account_state = get_zero_copy_account(account_data);
         self.account_ctx = AccountContext {
             address: *account,
@@ -276,18 +277,28 @@ impl UserContext {
     }
 
     /// Reloads a [`CypherSubAccount`] from the given account data.
-    /// 
+    ///
     /// ### Errors
-    /// 
+    ///
     /// This function will return an error if the account data is invalid.
-    pub fn reload_sub_account_from_account_data(&mut self, sub_account: &Pubkey, account_data: &[u8])  {
+    pub fn reload_sub_account_from_account_data(
+        &mut self,
+        sub_account: &Pubkey,
+        account_data: &[u8],
+    ) {
         let new_sub_account_state = get_zero_copy_account(account_data);
         let new_sub_account_ctx = SubAccountContext {
             address: *sub_account,
             state: new_sub_account_state,
         };
 
-        if !self.sub_account_ctxs.iter().map(|sa| sa.address).collect::<Vec<_>>().contains(sub_account) {
+        if !self
+            .sub_account_ctxs
+            .iter()
+            .map(|sa| sa.address)
+            .collect::<Vec<_>>()
+            .contains(sub_account)
+        {
             self.sub_account_ctxs.push(new_sub_account_ctx.clone());
         } else {
             for sub_account_ctx in self.sub_account_ctxs.iter_mut() {
@@ -334,7 +345,7 @@ impl UserContext {
             sub_accounts_alias,
         )];
 
-        let _ = send_transactions(&rpc_client, ixs, signer, true).await;
+        let _ = send_transactions(&rpc_client, ixs, signer, true, Some((1_400_000, 1))).await;
 
         self.reload(rpc_client).await
     }

@@ -10,8 +10,9 @@ use solana_client::{
     rpc_filter::RpcFilterType,
 };
 use solana_sdk::{
-    account::Account, commitment_config::CommitmentConfig, hash::Hash, instruction::Instruction,
-    rent::Rent, signature::Signature, signer::Signer, system_instruction, transaction::Transaction,
+    account::Account, commitment_config::CommitmentConfig,
+    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction, rent::Rent,
+    signature::Signature, signer::Signer, system_instruction, transaction::Transaction,
 };
 use thiserror::Error;
 
@@ -245,10 +246,16 @@ pub async fn send_transactions(
     ixs: Vec<Instruction>,
     signer: &Keypair,
     confirm: bool,
+    compute_unit_info: Option<(u32, u64)>,
 ) -> Result<Vec<Signature>, ClientError> {
     let mut txn_builder = TransactionBuilder::new();
     let mut submitted: bool = false;
     let mut signatures: Vec<Signature> = Vec::new();
+
+    if let Some((cu_limit, cu_price)) = compute_unit_info {
+        txn_builder.add(ComputeBudgetInstruction::set_compute_unit_limit(cu_limit));
+        txn_builder.add(ComputeBudgetInstruction::set_compute_unit_price(cu_price));
+    }
 
     let blockhash = match rpc_client.get_latest_blockhash().await {
         Ok(h) => h,
@@ -268,6 +275,12 @@ pub async fn send_transactions(
                     Ok(s) => {
                         submitted = true;
                         txn_builder.clear();
+                        if let Some((cu_limit, cu_price)) = compute_unit_info {
+                            txn_builder
+                                .add(ComputeBudgetInstruction::set_compute_unit_limit(cu_limit));
+                            txn_builder
+                                .add(ComputeBudgetInstruction::set_compute_unit_price(cu_price));
+                        }
                         txn_builder.add(ix);
                         signatures.push(s);
                     }

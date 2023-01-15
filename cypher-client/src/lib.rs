@@ -578,6 +578,32 @@ impl Cache {
 }
 
 impl CypherAccount {
+    /// gets the assets value of this account
+    pub fn get_assets_value(&self) -> I80F48 {
+        let mut assets_value = I80F48::ZERO;
+
+        for cache in self.sub_account_caches.iter() {
+            if cache.margining == SubAccountMargining::Cross {
+                assets_value += cache.assets_value();
+            }
+        }
+
+        assets_value
+    }
+
+    /// gets the liabilites value of this account
+    pub fn get_liabilities_value(&self) -> I80F48 {
+        let mut liabilities_value = I80F48::ZERO;
+
+        for cache in self.sub_account_caches.iter() {
+            if cache.margining == SubAccountMargining::Cross {
+                liabilities_value += cache.liabilities_value();
+            }
+        }
+
+        liabilities_value
+    }
+
     /// gets the c-ratio for this account
     pub fn get_margin_c_ratio(&self) -> I80F48 {
         let mut assets_value = I80F48::ZERO;

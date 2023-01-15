@@ -15,8 +15,11 @@ use crate::{
         CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing, CreatePublicClearing,
         CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount, DepositDeliverable,
         DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder,
-        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
-        SetFuturesMarketStatus, SetOracleProducts, SetPerpetualMarketStatus, SetPoolNodeStatus,
+        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetClearingAuthority,
+        SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
+        SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams, SetFuturesMarketStatus,
+        SetOracleProducts, SetPerpetualMarketAuthority, SetPerpetualMarketLiquidityMiningInfo,
+        SetPerpetualMarketParams, SetPerpetualMarketStatus, SetPoolDexMarket, SetPoolNodeStatus,
         SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
         SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
         TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
@@ -24,8 +27,8 @@ use crate::{
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
-    CreatePerpetualMarketArgs, CreatePoolArgs, NewDerivativeOrderArgs, NewSpotOrderArgs,
-    OperatingStatus,
+    CreatePerpetualMarketArgs, CreatePoolArgs, FeeTierArgs, LiquidityMiningArgs,
+    NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus,
 };
 
 pub fn create_public_clearing(
@@ -1574,6 +1577,199 @@ pub fn set_futures_market_status(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetFuturesMarketStatus { _status: status };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_clearing_fee_tiers(
+    clearing: &Pubkey,
+    authority: &Pubkey,
+    fee_tiers: &[FeeTierArgs],
+) -> Instruction {
+    let accounts = SetClearingFeeTiers {
+        clearing: *clearing,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetClearingFeeTiers {
+        _fee_tiers: fee_tiers.to_vec(),
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_clearing_fee_mint(
+    clearing: &Pubkey,
+    authority: &Pubkey,
+    fee_mint: &Pubkey,
+) -> Instruction {
+    let accounts = SetClearingFeeMint {
+        clearing: *clearing,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetClearingFeeMint {
+        _fee_mint: fee_mint.clone(),
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_clearing_authority(
+    clearing: &Pubkey,
+    authority: &Pubkey,
+    new_authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetClearingAuthority {
+        clearing: *clearing,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetClearingAuthority {
+        _new_authority: new_authority.clone(),
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_perpetual_market_authority(
+    market: &Pubkey,
+    authority: &Pubkey,
+    new_authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetPerpetualMarketAuthority {
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPerpetualMarketAuthority {
+        _new_authority: new_authority.clone(),
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_perpetual_market_params(
+    cache: &Pubkey,
+    market: &Pubkey,
+    authority: &Pubkey,
+    impact_quantity: Option<u64>,
+    max_base_order_size: Option<u64>,
+    max_quote_order_size: Option<u64>,
+    init_asset_weight: Option<u8>,
+    maint_asset_weight: Option<u8>,
+    init_liab_weight: Option<u8>,
+    maint_liab_weight: Option<u8>,
+) -> Instruction {
+    let accounts = SetPerpetualMarketParams {
+        cache: *cache,
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPerpetualMarketParams {
+        _impact_quantity: impact_quantity,
+        _max_base_order_size: max_base_order_size,
+        _max_quote_order_size: max_quote_order_size,
+        _init_asset_weight: init_asset_weight,
+        _maint_asset_weight: maint_asset_weight,
+        _init_liab_weight: init_liab_weight,
+        _maint_liab_weight: maint_liab_weight,
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_perpetual_market_liquidity_mining_info(
+    market: &Pubkey,
+    authority: &Pubkey,
+    args: LiquidityMiningArgs,
+) -> Instruction {
+    let accounts = SetPerpetualMarketLiquidityMiningInfo {
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPerpetualMarketLiquidityMiningInfo { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_futures_market_authority(
+    market: &Pubkey,
+    authority: &Pubkey,
+    new_authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetFuturesMarketAuthority {
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetFuturesMarketAuthority {
+        _new_authority: new_authority.clone(),
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_futures_market_params(
+    cache: &Pubkey,
+    market: &Pubkey,
+    authority: &Pubkey,
+    max_base_order_size: Option<u64>,
+    max_quote_order_size: Option<u64>,
+    init_asset_weight: Option<u8>,
+    maint_asset_weight: Option<u8>,
+    init_liab_weight: Option<u8>,
+    maint_liab_weight: Option<u8>,
+) -> Instruction {
+    let accounts = SetFuturesMarketParams {
+        cache: *cache,
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetFuturesMarketParams {
+        _max_base_order_size: max_base_order_size,
+        _max_quote_order_size: max_quote_order_size,
+        _init_asset_weight: init_asset_weight,
+        _maint_asset_weight: maint_asset_weight,
+        _init_liab_weight: init_liab_weight,
+        _maint_liab_weight: maint_liab_weight,
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_futures_market_liquidity_mining_info(
+    market: &Pubkey,
+    authority: &Pubkey,
+    args: LiquidityMiningArgs,
+) -> Instruction {
+    let accounts = SetFuturesMarketLiquidityMiningInfo {
+        market: *market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetFuturesMarketLiquidityMiningInfo { _args: args };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

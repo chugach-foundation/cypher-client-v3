@@ -6,13 +6,20 @@ use cypher_client::serum::parse_dex_account;
 use log::warn;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
-    rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
+    rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig},
     rpc_filter::RpcFilterType,
 };
 use solana_sdk::{
-    account::Account, commitment_config::CommitmentConfig,
-    compute_budget::ComputeBudgetInstruction, hash::Hash, instruction::Instruction, rent::Rent,
-    signature::Signature, signer::Signer, system_instruction, transaction::Transaction,
+    account::Account,
+    commitment_config::{CommitmentConfig, CommitmentLevel},
+    compute_budget::ComputeBudgetInstruction,
+    hash::Hash,
+    instruction::Instruction,
+    rent::Rent,
+    signature::Signature,
+    signer::Signer,
+    system_instruction,
+    transaction::Transaction,
 };
 use thiserror::Error;
 
@@ -331,10 +338,14 @@ pub async fn send_transaction(
     tx: &Transaction,
     confirm: bool,
 ) -> Result<Signature, ClientError> {
+    let config = RpcSendTransactionConfig {
+        preflight_commitment: Some(CommitmentLevel::Processed),
+        ..Default::default()
+    };
     let submit_res = if confirm {
         rpc_client.send_and_confirm_transaction(tx).await
     } else {
-        rpc_client.send_transaction(tx).await
+        rpc_client.send_transaction_with_config(tx, config).await
     };
     match submit_res {
         Ok(s) => Ok(s),

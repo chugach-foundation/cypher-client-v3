@@ -192,7 +192,15 @@ impl UserContext {
             ),
         ];
 
-        let _ = send_transactions(&rpc_client, ixs, authority, true, Some((1_400_000, 1))).await;
+        let _ = send_transactions(
+            &rpc_client,
+            ixs,
+            authority,
+            true,
+            Some((1_400_000, 1)),
+            None,
+        )
+        .await;
 
         UserContext::load(rpc_client, &authority.pubkey(), Some(account_number)).await
     }
@@ -345,7 +353,7 @@ impl UserContext {
             sub_accounts_alias,
         )];
 
-        let _ = send_transactions(&rpc_client, ixs, signer, true, Some((1_400_000, 1))).await;
+        let _ = send_transactions(&rpc_client, ixs, signer, true, Some((1_400_000, 1)), None).await;
 
         self.reload(rpc_client).await
     }

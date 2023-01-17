@@ -254,6 +254,7 @@ pub async fn send_transactions(
     signer: &Keypair,
     confirm: bool,
     compute_unit_info: Option<(u32, u64)>,
+    blockhash: Option<Hash>,
 ) -> Result<Vec<Signature>, ClientError> {
     let mut txn_builder = TransactionBuilder::new();
     let mut submitted: bool = false;
@@ -264,10 +265,14 @@ pub async fn send_transactions(
         txn_builder.add(ComputeBudgetInstruction::set_compute_unit_price(cu_price));
     }
 
-    let blockhash = match rpc_client.get_latest_blockhash().await {
-        Ok(h) => h,
-        Err(e) => {
-            return Err(e);
+    let blockhash = if let Some(hash) = blockhash {
+        hash
+    } else {
+        match rpc_client.get_latest_blockhash().await {
+            Ok(h) => h,
+            Err(e) => {
+                return Err(e);
+            }
         }
     };
 
@@ -276,7 +281,7 @@ pub async fn send_transactions(
             let tx = txn_builder.build(blockhash, signer, None);
             // we do this to attempt to pack as many ixs in a tx as possible
             // there's more efficient ways to do it but we'll do it in the future
-            if tx.message_data().len() > 1000 {
+            if tx.message_data().len() > 1100 {
                 let res = send_transaction(rpc_client, &tx, confirm).await;
                 match res {
                     Ok(s) => {

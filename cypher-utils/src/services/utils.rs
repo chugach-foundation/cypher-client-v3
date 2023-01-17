@@ -1,12 +1,16 @@
 use {
     base64::DecodeError,
     solana_account_decoder::{UiAccount, UiAccountEncoding},
+    thiserror::Error,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Error)]
 pub enum AccountDecodingError {
+    #[error("Invalid account response format.")]
     InvalidAccountResponseFormat,
+    #[error("Invalid account data encoding.")]
     InvalidAccountDataEncoding,
+    #[error("Error decoding account: {0}")]
     AccountInfoDecoding(DecodeError),
 }
 

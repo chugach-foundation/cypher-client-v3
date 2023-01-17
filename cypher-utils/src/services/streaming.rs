@@ -1,4 +1,9 @@
 use {
+    crate::{
+        accounts_cache::{AccountState, AccountsCache},
+        constants::{JSON_RPC_URL, PUBSUB_RPC_URL},
+        services::utils::get_account_info,
+    },
     futures::StreamExt,
     log::{info, warn},
     solana_account_decoder::UiAccountEncoding,
@@ -18,19 +23,14 @@ use {
     },
 };
 
-use crate::{
-    accounts_cache::{AccountState, AccountsCache},
-    services::utils::get_account_info,
-};
-
 /// A Service which allows subscribing to Accounts and receiving updates
 /// to their state via an [`AccountsCache`].
 pub struct StreamingAccountInfoService {
-    cache: Arc<AccountsCache>,
-    pubsub_client: Arc<PubsubClient>,
-    rpc_client: Arc<RpcClient>,
-    shutdown: RwLock<Receiver<bool>>,
+    pub cache: Arc<AccountsCache>,
+    pub pubsub_client: Arc<PubsubClient>,
+    pub rpc_client: Arc<RpcClient>,
     pub accounts: RwLock<Vec<Pubkey>>,
+    shutdown: RwLock<Receiver<bool>>,
     handlers: RwLock<Vec<Arc<SubscriptionHandler>>>,
 }
 
@@ -38,14 +38,10 @@ impl StreamingAccountInfoService {
     pub async fn default() -> Self {
         Self {
             cache: Arc::new(AccountsCache::default()),
-            pubsub_client: Arc::new(
-                PubsubClient::new("wss://api.devnet.solana.com")
-                    .await
-                    .unwrap(),
-            ),
-            rpc_client: Arc::new(RpcClient::new("https://api.devnet.solana.com".to_string())),
-            shutdown: RwLock::new(channel::<bool>(1).1),
+            pubsub_client: Arc::new(PubsubClient::new(PUBSUB_RPC_URL).await.unwrap()),
+            rpc_client: Arc::new(RpcClient::new(JSON_RPC_URL.to_string())),
             accounts: RwLock::new(Vec::new()),
+            shutdown: RwLock::new(channel::<bool>(1).1),
             handlers: RwLock::new(Vec::new()),
         }
     }
@@ -217,12 +213,11 @@ impl StreamingAccountInfoService {
 
     #[inline(always)]
     async fn get_account_infos(&self, accounts: &[Pubkey]) -> Result<(), ClientError> {
-        let rpc_result = self
+        let res = match self
             .rpc_client
             .get_multiple_accounts_with_commitment(accounts, CommitmentConfig::confirmed())
-            .await;
-
-        let res = match rpc_result {
+            .await
+        {
             Ok(r) => r,
             Err(e) => {
                 warn!("Could not fetch account infos: {}", e.to_string());
@@ -289,10 +284,11 @@ impl SubscriptionHandler {
     /// Subscribes to the provided Account and processes updates.
     /// While the subscription persists, the handler will update the correspoding entry
     /// for the provided Account in it's [`AccountsCache`].
+    #[inline(always)]
     pub async fn run(self: &Arc<Self>) -> Result<(), PubsubClientError> {
         let shutdown = self.shutdown.read().await;
         let mut shutdown_receiver = shutdown.subscribe();
-        let sub = self
+        let sub = match self
             .pubsub_client
             .account_subscribe(
                 &self.account,
@@ -303,21 +299,37 @@ impl SubscriptionHandler {
                 }),
             )
             .await
-            .unwrap();
+        {
+            Ok(s) => s,
+            Err(e) => {
+                warn!("Failed to subscribe to accounts: {}", e.to_string());
+                return Err(e);
+            }
+        };
 
         let mut stream = sub.0;
         loop {
             tokio::select! {
                 update = stream.next() => {
-                    if update.is_some() {
-                        let account_res = update.unwrap();
-                        let account_data = get_account_info(&account_res.value).unwrap();
-                        info!("Received account update for {}, updating cache.",  self.account);
-                        self.cache.insert(self.account, AccountState {
-                            account: self.account,
-                            data: account_data,
-                            slot: account_res.context.slot,
-                        }).await;
+                    match update {
+                        Some(account) => {
+                            let account_data = match get_account_info(&account.value) {
+                                Ok(data) => data,
+                                Err(e) => {
+                                    warn!("Failed to decode account data: {}", e.to_string());
+                                    continue;
+                                }
+                            };
+                            info!("Received account update for {}, updating cache.",  self.account);
+                            self.cache.insert(self.account, AccountState {
+                                account: self.account,
+                                data: account_data,
+                                slot: account.context.slot,
+                            }).await;
+                        }
+                        None => {
+                            warn!("Something went wrong while receiving update for account: {}", self.account);
+                        }
                     }
                 },
                 _ = shutdown_receiver.recv() => {
@@ -330,6 +342,7 @@ impl SubscriptionHandler {
     }
 
     /// Stops the subscription handler from processing additional messages.
+    #[inline(always)]
     pub async fn stop(self: &Arc<Self>) -> Result<usize, SendError<bool>> {
         let shutdown = self.shutdown.write().await;
         shutdown.send(true)

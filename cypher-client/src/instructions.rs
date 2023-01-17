@@ -1776,3 +1776,23 @@ pub fn set_futures_market_liquidity_mining_info(
         data: ix_data.data(),
     }
 }
+
+pub fn set_pool_dex_market(
+    clearing: &Pubkey,
+    pool: &Pubkey,
+    dex_market: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetPoolDexMarket {
+        clearing: *clearing,
+        pool: *pool,
+        dex_market: *dex_market,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPoolDexMarket {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}

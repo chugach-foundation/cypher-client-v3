@@ -22,6 +22,8 @@ async fn main() {
         rpc_client.clone(),
         pubsub_client.clone(),
         shutdown.subscribe(),
+        false,
+        true,
     ));
     let cms_clone = cms.clone();
     let handle = tokio::spawn(async move {

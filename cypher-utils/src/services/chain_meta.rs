@@ -94,10 +94,10 @@ impl ChainMetaService {
     #[inline(always)]
     pub async fn start_service(self: &Arc<Self>) -> Result<(), ChainMetaServiceError> {
         if self.subscribe_slot {
-            info!("Starting service with slot subscription.");
+            info!("Starting Chain Meta Service with slot subscription.");
             self.start_service_with_slot_subscription().await
         } else {
-            info!("Starting service without slot subscription.");
+            info!("Starting Chain Meta Service without slot subscription.");
             self.start_service_without_slot_subscription().await
         }
     }

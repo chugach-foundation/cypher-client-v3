@@ -327,9 +327,7 @@ impl SubscriptionHandler {
                                 slot: account.context.slot,
                             }).await;
                         }
-                        None => {
-                            warn!("Something went wrong while receiving update for account: {}", self.account);
-                        }
+                        None => ()
                     }
                 },
                 _ = shutdown_receiver.recv() => {

@@ -14,8 +14,14 @@ use {
     solana_sdk::{hash::Hash, pubkey::Pubkey},
     std::sync::Arc,
     thiserror::Error,
-    tokio::sync::broadcast::{channel, Receiver, Sender},
-    tokio::{sync::RwLock, time::Duration},
+    tokio::{
+        runtime::Handle,
+        sync::{
+            broadcast::{channel, Receiver, Sender},
+            RwLock,
+        },
+        time::Duration,
+    },
 };
 
 #[derive(Debug, Error)]
@@ -54,11 +60,12 @@ pub struct ChainMetaService {
     fetch_priority_fees: bool,
 }
 
-impl ChainMetaService {
-    pub async fn default() -> Self {
+impl Default for ChainMetaService {
+    fn default() -> Self {
+        let pubsub_client = futures::executor::block_on(PubsubClient::new(PUBSUB_RPC_URL));
         Self {
             rpc_client: Arc::new(RpcClient::new(JSON_RPC_URL.to_string())),
-            pubsub_client: Arc::new(PubsubClient::new(PUBSUB_RPC_URL).await.unwrap()),
+            pubsub_client: Arc::new(pubsub_client.unwrap()),
             accounts_map: RwLock::new(Vec::new()),
             recent_blockhash: RwLock::new(Hash::default()),
             latest_slot: RwLock::new(u64::default()),
@@ -69,7 +76,15 @@ impl ChainMetaService {
             fetch_priority_fees: false,
         }
     }
+}
 
+impl std::fmt::Debug for ChainMetaService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChainMetaService").finish()
+    }
+}
+
+impl ChainMetaService {
     pub fn new(
         rpc_client: Arc<RpcClient>,
         pubsub_client: Arc<PubsubClient>,

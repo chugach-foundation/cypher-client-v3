@@ -23,6 +23,17 @@ pub struct SubscriptionMap {
 pub struct AccountsCache {
     map: DashMap<Pubkey, AccountState>,
     subscriptions: RwLock<Vec<SubscriptionMap>>,
+    sender: Arc<Sender<AccountState>>,
+}
+
+impl Default for AccountsCache {
+    fn default() -> Self {
+        Self {
+            map: DashMap::default(),
+            subscriptions: RwLock::new(Vec::new()),
+            sender: Arc::new(channel::<AccountState>(u16::MAX as usize).0),
+        }
+    }
 }
 
 /// Represent's an on-chain Account's state at a given slot.
@@ -37,19 +48,18 @@ pub struct AccountState {
 }
 
 impl AccountsCache {
-    pub fn default() -> Self {
-        Self {
-            map: DashMap::default(),
-            subscriptions: RwLock::new(Vec::new()),
-        }
-    }
-
     /// Creates a new [`AccountsCache`].
     pub fn new() -> Self {
         AccountsCache {
             map: DashMap::new(),
             subscriptions: RwLock::new(Vec::new()),
+            sender: Arc::new(channel::<AccountState>(u16::MAX as usize).0),
         }
+    }
+
+    /// Gets a [`Receiver`] handle that will receive cache updates after the call to `subscribe`.
+    pub fn subscribe_all(&self) -> Receiver<AccountState> {
+        self.sender.subscribe()
     }
 
     /// Gets a [`Receiver`] handle that will receive cache updates after the call to `subscribe`.
@@ -85,7 +95,7 @@ impl AccountsCache {
             if sub.accounts.contains(&key) {
                 match sub.sender.send(data.clone()) {
                     Ok(r) => {
-                        info!("Sent updated Account state to {} recievers.", r);
+                        info!("Sent updated Account state to {} receivers.", r);
                     }
                     Err(_) => {
                         warn!(
@@ -94,6 +104,17 @@ impl AccountsCache {
                         );
                     }
                 }
+            }
+        }
+        match self.sender.send(data.clone()) {
+            Ok(r) => {
+                info!("Sent updated Account state to {} receivers.", r);
+            }
+            Err(_) => {
+                warn!(
+                    "Failed to send message about updated Account {}",
+                    key.to_string()
+                );
             }
         }
         self.map.insert(key, data);

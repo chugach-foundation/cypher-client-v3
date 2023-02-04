@@ -17,9 +17,12 @@ use {
     },
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey},
     std::sync::Arc,
-    tokio::sync::{
-        broadcast::{channel, error::SendError, Receiver, Sender},
-        RwLock,
+    tokio::{
+        runtime::Handle,
+        sync::{
+            broadcast::{channel, error::SendError, Receiver, Sender},
+            RwLock,
+        },
     },
 };
 
@@ -34,18 +37,27 @@ pub struct StreamingAccountInfoService {
     handlers: RwLock<Vec<Arc<SubscriptionHandler>>>,
 }
 
-impl StreamingAccountInfoService {
-    pub async fn default() -> Self {
+impl Default for StreamingAccountInfoService {
+    fn default() -> Self {
+        let pubsub_client = futures::executor::block_on(PubsubClient::new(PUBSUB_RPC_URL));
         Self {
             cache: Arc::new(AccountsCache::default()),
-            pubsub_client: Arc::new(PubsubClient::new(PUBSUB_RPC_URL).await.unwrap()),
+            pubsub_client: Arc::new(pubsub_client.unwrap()),
             rpc_client: Arc::new(RpcClient::new(JSON_RPC_URL.to_string())),
             accounts: RwLock::new(Vec::new()),
             shutdown: RwLock::new(channel::<bool>(1).1),
             handlers: RwLock::new(Vec::new()),
         }
     }
+}
 
+impl std::fmt::Debug for StreamingAccountInfoService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StreamingAccountInfoService").finish()
+    }
+}
+
+impl StreamingAccountInfoService {
     /// Creates a new [`StreamingAccountInfoService`].
     pub fn new(
         cache: Arc<AccountsCache>,
@@ -81,7 +93,6 @@ impl StreamingAccountInfoService {
         }
 
         let mut handlers = self.handlers.write().await;
-        let accounts = self.accounts.read().await;
 
         for account in accounts.iter() {
             let handler = Arc::new(SubscriptionHandler::new(
@@ -106,9 +117,10 @@ impl StreamingAccountInfoService {
             });
         }
 
-        // drop the reference to handlers so new subscriptions can be added
+        // drop the references so new subscriptions can be added
         // after we start waiting on the shutdown receiver
         drop(handlers);
+        drop(accounts);
 
         let mut shutdown_receiver = self.shutdown.write().await;
 
@@ -146,10 +158,12 @@ impl StreamingAccountInfoService {
                 );
             }
         }
-        let mut handlers = self.handlers.write().await;
-        let mut accounts = self.accounts.write().await;
+
+        let mut handlers_vec = Vec::new();
+        let mut accounts_vec = Vec::new();
 
         for account in new_accounts.iter() {
+            info!("Adding subscription handler for: {}", account);
             let handler = Arc::new(SubscriptionHandler::new(
                 Arc::clone(&self.pubsub_client),
                 Arc::clone(&self.cache),
@@ -159,7 +173,12 @@ impl StreamingAccountInfoService {
             let cloned_handler = Arc::clone(&handler);
             tokio::spawn(async move {
                 match cloned_handler.run().await {
-                    Ok(_) => (),
+                    Ok(_) => {
+                        info!(
+                            "Subscription handler for account: {} gracefully stopped.",
+                            cloned_handler.account
+                        );
+                    }
                     Err(e) => {
                         warn!(
                             "There was an error running subscription handler for account {}: {}",
@@ -169,9 +188,20 @@ impl StreamingAccountInfoService {
                     }
                 }
             });
-            accounts.push(*account);
-            handlers.push(handler);
+            accounts_vec.push(*account);
+            handlers_vec.push(handler);
+            info!("Successfully added subscription handler for: {}.", account);
         }
+        let mut handlers = self.handlers.write().await;
+        handlers.extend(handlers_vec);
+        drop(handlers);
+        let mut accounts = self.accounts.write().await;
+        accounts.extend(accounts_vec);
+        drop(accounts);
+        info!(
+            "Successfully added {} new subscriptions.",
+            new_accounts.len()
+        );
     }
 
     /// Attempts to remove existing subscriptions from the service.
@@ -196,11 +226,13 @@ impl StreamingAccountInfoService {
                 idxs.push(idx);
             }
         }
+        drop(handlers);
 
         // check if we actually have indices to remove to avoid getting the locks
         if !idxs.is_empty() {
             // reverse the indices so we don't have to worry about
             // the elements shifting inside the vector whenever we remove an element
+            idxs.sort();
             idxs.reverse();
             let mut handlers = self.handlers.write().await;
             let mut accounts = self.accounts.write().await;
@@ -208,11 +240,14 @@ impl StreamingAccountInfoService {
                 handlers.remove(*idx);
                 accounts.remove(*idx);
             }
+            drop(handlers);
+            drop(accounts);
         }
     }
 
     #[inline(always)]
     async fn get_account_infos(&self, accounts: &[Pubkey]) -> Result<(), ClientError> {
+        info!("Fetching {} account infos.", accounts.len());
         let res = match self
             .rpc_client
             .get_multiple_accounts_with_commitment(accounts, CommitmentConfig::confirmed())

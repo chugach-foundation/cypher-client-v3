@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 use {
+    agnostic_orderbook::state::{
+        critbit::{InnerNode, LeafNode, SlabHeader},
+        event_queue::{EventQueueHeader, FillEvent},
+    },
     anchor_lang::{prelude::*, Discriminator, ZeroCopy},
     anchor_spl::{associated_token, dex, token::spl_token},
     arrayref::array_ref,
@@ -301,4 +305,18 @@ pub fn derive_orders_account_address(market: &Pubkey, master_account: &Pubkey) -
         &[B_ORDERS_ACCOUNT, market.as_ref(), master_account.as_ref()],
         &crate::id(),
     )
+}
+
+/// Compute the allocation size for an event queue of a desired capacity.
+pub fn compute_event_queue_size(desired_event_capacity: usize) -> usize {
+    desired_event_capacity * (FillEvent::LEN + 2 * CALLBACK_INFO_LEN) + EventQueueHeader::LEN + 8
+}
+
+/// Compute the allocation size for an slab of a desired capacity.
+pub fn compute_slab_size(desired_order_capacity: usize) -> usize {
+    8 + SlabHeader::LEN
+        + LeafNode::LEN
+        + CALLBACK_INFO_LEN
+        + (desired_order_capacity.checked_sub(1).unwrap())
+            * (LeafNode::LEN + InnerNode::LEN + CALLBACK_INFO_LEN)
 }

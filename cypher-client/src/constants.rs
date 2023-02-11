@@ -31,6 +31,9 @@ pub const B_WHITELIST: &[u8] = b"CYPHER_WHITELIST";
 pub const B_ORDERS_ACCOUNT: &[u8] = b"CYPHER_ORDERS_ACCOUNT";
 pub const B_OPEN_ORDERS: &[u8] = b"OPEN_ORDERS";
 
+/// The size of the callback info.
+pub const CALLBACK_INFO_LEN: usize = 34;
+
 /// The length of the encoded sub account alias.
 pub const SUB_ACCOUNT_ALIAS_LEN: usize = 32;
 /// The length of the encoded market name.

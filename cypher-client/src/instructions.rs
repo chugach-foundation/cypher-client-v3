@@ -22,8 +22,8 @@ use crate::{
         SetPerpetualMarketParams, SetPerpetualMarketStatus, SetPoolDexMarket, SetPoolNodeStatus,
         SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
         SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
-        TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
-        UpdateTokenIndex, WithdrawFunds,
+        SweepMarketFees, SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin,
+        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
@@ -1790,6 +1790,58 @@ pub fn set_pool_dex_market(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetPoolDexMarket {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn sweep_market_fees(
+    clearing: &Pubkey,
+    market: &Pubkey,
+    quote_pool_node: &Pubkey,
+    quote_vault: &Pubkey,
+    destination_token_account: &Pubkey,
+    vault_signer: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = SweepMarketFees {
+        clearing: *clearing,
+        market: *market,
+        quote_pool_node: *quote_pool_node,
+        quote_vault: *quote_vault,
+        destination_token_account: *destination_token_account,
+        vault_signer: *vault_signer,
+        authority: *authority,
+        token_program: token::ID,
+    };
+    let ix_data = crate::instruction::SweepMarketFees {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn sweep_pool_fees(
+    pool: &Pubkey,
+    quote_pool_node: &Pubkey,
+    quote_vault: &Pubkey,
+    destination_token_account: &Pubkey,
+    vault_signer: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = SweepPoolFees {
+        token_pool: *pool,
+        quote_pool_node: *quote_pool_node,
+        quote_vault: *quote_vault,
+        destination_token_account: *destination_token_account,
+        vault_signer: *vault_signer,
+        authority: *authority,
+        token_program: token::ID,
+    };
+    let ix_data = crate::instruction::SweepPoolFees {};
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

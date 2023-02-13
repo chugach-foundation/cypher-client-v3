@@ -17,12 +17,9 @@ use {
     },
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey},
     std::sync::Arc,
-    tokio::{
-        runtime::Handle,
-        sync::{
-            broadcast::{channel, error::SendError, Receiver, Sender},
-            RwLock,
-        },
+    tokio::sync::{
+        broadcast::{channel, error::SendError, Receiver, Sender},
+        RwLock,
     },
 };
 

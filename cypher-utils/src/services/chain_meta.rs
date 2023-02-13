@@ -15,7 +15,6 @@ use {
     std::sync::Arc,
     thiserror::Error,
     tokio::{
-        runtime::Handle,
         sync::{
             broadcast::{channel, Receiver, Sender},
             RwLock,

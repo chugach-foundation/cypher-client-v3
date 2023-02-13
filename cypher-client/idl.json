@@ -532,6 +532,37 @@
       ]
     },
     {
+      "name": "createOracleStub",
+      "accounts": [
+        {
+          "name": "oracleStub",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "symbol",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "createOrdersAccount",
       "accounts": [
         {
@@ -1868,6 +1899,22 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "setOracleStubPrice",
+      "accounts": [
+        {
+          "name": "oracleStub",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "i128"
+        }
+      ]
     },
     {
       "name": "setSubAccountDelegate",
@@ -3822,6 +3869,33 @@
             "type": {
               "vec": "u16"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OracleStub",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "symbol",
+            "docs": [
+              "the symbol of the underlying token that this oracle stub provides a feed for"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "price",
+            "docs": [
+              "The oracle price"
+            ],
+            "type": "i128"
           }
         ]
       }

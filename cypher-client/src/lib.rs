@@ -46,7 +46,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("6prLRRLSvwWLkCBc7V2B3FWi716AssNyPfp1NH88751v");
+declare_id!("E2hQJAedG6bX2w3rbPQ5XrBnPvC7u3mAorKLvU6XPxwe");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;
@@ -93,7 +93,7 @@ pub mod cache_account {
     #[cfg(feature = "mainnet-beta")]
     declare_id!("6x5U4c41tfUYGEbTXofFiHcfyx3rqJZsT4emrLisNGGL");
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("3ac3b5RYdEogzXHr7xMESiyYKkDzXGShuSJWX1ZPWHRP");
+    declare_id!("DV1umVB5KzBkPuav7JbDNNKUzaDk9v2zAUNudR3kKRmZ");
 }
 
 pub mod wrapped_sol {
@@ -124,6 +124,70 @@ impl ToString for Side {
         match self {
             Side::Bid => "Bid".to_string(),
             Side::Ask => "Ask".to_string(),
+        }
+    }
+}
+
+impl PartialEq for OperatingStatus {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (OperatingStatus::Active, OperatingStatus::Active) => true,
+            (OperatingStatus::Active, OperatingStatus::ReduceOnly) => false,
+            (OperatingStatus::Active, OperatingStatus::CancelOnly) => false,
+            (OperatingStatus::Active, OperatingStatus::Halted) => false,
+            (OperatingStatus::ReduceOnly, OperatingStatus::Active) => false,
+            (OperatingStatus::ReduceOnly, OperatingStatus::ReduceOnly) => true,
+            (OperatingStatus::ReduceOnly, OperatingStatus::CancelOnly) => false,
+            (OperatingStatus::ReduceOnly, OperatingStatus::Halted) => false,
+            (OperatingStatus::CancelOnly, OperatingStatus::Active) => false,
+            (OperatingStatus::CancelOnly, OperatingStatus::ReduceOnly) => false,
+            (OperatingStatus::CancelOnly, OperatingStatus::CancelOnly) => true,
+            (OperatingStatus::CancelOnly, OperatingStatus::Halted) => false,
+            (OperatingStatus::Halted, OperatingStatus::Active) => false,
+            (OperatingStatus::Halted, OperatingStatus::ReduceOnly) => false,
+            (OperatingStatus::Halted, OperatingStatus::CancelOnly) => false,
+            (OperatingStatus::Halted, OperatingStatus::Halted) => true,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (OperatingStatus::Active, OperatingStatus::Active) => false,
+            (OperatingStatus::Active, OperatingStatus::ReduceOnly) => true,
+            (OperatingStatus::Active, OperatingStatus::CancelOnly) => true,
+            (OperatingStatus::Active, OperatingStatus::Halted) => true,
+            (OperatingStatus::ReduceOnly, OperatingStatus::Active) => true,
+            (OperatingStatus::ReduceOnly, OperatingStatus::ReduceOnly) => false,
+            (OperatingStatus::ReduceOnly, OperatingStatus::CancelOnly) => true,
+            (OperatingStatus::ReduceOnly, OperatingStatus::Halted) => true,
+            (OperatingStatus::CancelOnly, OperatingStatus::Active) => true,
+            (OperatingStatus::CancelOnly, OperatingStatus::ReduceOnly) => true,
+            (OperatingStatus::CancelOnly, OperatingStatus::CancelOnly) => false,
+            (OperatingStatus::CancelOnly, OperatingStatus::Halted) => true,
+            (OperatingStatus::Halted, OperatingStatus::Active) => true,
+            (OperatingStatus::Halted, OperatingStatus::ReduceOnly) => true,
+            (OperatingStatus::Halted, OperatingStatus::CancelOnly) => true,
+            (OperatingStatus::Halted, OperatingStatus::Halted) => false,
+        }
+    }
+}
+
+impl PartialEq for ClearingType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ClearingType::Public, ClearingType::Public) => true,
+            (ClearingType::Public, ClearingType::Private) => false,
+            (ClearingType::Private, ClearingType::Public) => false,
+            (ClearingType::Private, ClearingType::Private) => true,
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ClearingType::Public, ClearingType::Public) => false,
+            (ClearingType::Public, ClearingType::Private) => true,
+            (ClearingType::Private, ClearingType::Public) => true,
+            (ClearingType::Private, ClearingType::Private) => false,
         }
     }
 }
@@ -465,6 +529,18 @@ impl CacheAccount {
     /// gets a price cache as mutable
     pub fn get_price_cache(&self, price_cache_idx: usize) -> &Cache {
         &self.caches[price_cache_idx]
+    }
+
+    /// gets the cache for a given oracle products
+    pub fn get_cache_for_oracle_products(&self, oracle_products: &Pubkey) -> Option<&Cache> {
+        match self
+            .caches
+            .iter()
+            .find(|c| &c.oracle_products == oracle_products)
+        {
+            Some(c) => Some(c),
+            None => None,
+        }
     }
 }
 

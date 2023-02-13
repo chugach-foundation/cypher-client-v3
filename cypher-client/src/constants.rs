@@ -30,6 +30,7 @@ pub const B_CYPHER_MARKET: &[u8] = b"CYPHER_MARKET";
 pub const B_WHITELIST: &[u8] = b"CYPHER_WHITELIST";
 pub const B_ORDERS_ACCOUNT: &[u8] = b"CYPHER_ORDERS_ACCOUNT";
 pub const B_OPEN_ORDERS: &[u8] = b"OPEN_ORDERS";
+pub const B_ORACLE_STUB: &[u8] = b"ORACLE_STUB";
 
 /// The size of the callback info.
 pub const CALLBACK_INFO_LEN: usize = 34;

@@ -11,19 +11,20 @@ use crate::{
         CancelSpotOrderDex, ClaimIdoProceeds, CloseAccount, CloseCacheAccount, CloseClearing,
         CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket, ClosePool, ClosePoolNode,
         CloseSpotOpenOrders, CloseSubAccount, ConsumeFuturesEvents, ConsumePerpEvents,
-        CreateAccount, CreateFuturesMarket, CreateOracleProducts, CreateOrdersAccount,
-        CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing, CreatePublicClearing,
-        CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount, DepositDeliverable,
-        DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder, NewPerpOrder,
-        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetClearingAuthority,
-        SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
+        CreateAccount, CreateFuturesMarket, CreateOracleProducts, CreateOracleStub,
+        CreateOrdersAccount, CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing,
+        CreatePublicClearing, CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount,
+        DepositDeliverable, DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder,
+        NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
+        SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
         SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams, SetFuturesMarketStatus,
-        SetOracleProducts, SetPerpetualMarketAuthority, SetPerpetualMarketLiquidityMiningInfo,
-        SetPerpetualMarketParams, SetPerpetualMarketStatus, SetPoolDexMarket, SetPoolNodeStatus,
-        SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
-        SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
-        SweepMarketFees, SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin,
-        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
+        SetOracleProducts, SetOracleStubPrice, SetPerpetualMarketAuthority,
+        SetPerpetualMarketLiquidityMiningInfo, SetPerpetualMarketParams, SetPerpetualMarketStatus,
+        SetPoolDexMarket, SetPoolNodeStatus, SetPoolStatus, SetSubAccountDelegate, SettleFunding,
+        SettleFuturesFunds, SettlePerpFunds, SettlePosition, SettlePositionWithDelivery,
+        SettleSpotFunds, SettleSpotFundsDex, SweepMarketFees, SweepPoolFees,
+        TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
+        UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
@@ -359,6 +360,32 @@ pub fn create_oracle_products(
     Instruction {
         program_id: crate::id(),
         accounts,
+        data: ix_data.data(),
+    }
+}
+
+pub fn create_oracle_stub(oracle_stub: &Pubkey, payer: &Pubkey, symbol: [u8; 32]) -> Instruction {
+    let accounts = CreateOracleStub {
+        oracle_stub: *oracle_stub,
+        payer: *payer,
+        system_program: system_program::ID,
+    };
+    let ix_data = crate::instruction::CreateOracleStub { _symbol: symbol };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_oracle_stub_price(oracle_stub: &Pubkey, price: i128) -> Instruction {
+    let accounts = SetOracleStubPrice {
+        oracle_stub: *oracle_stub,
+    };
+    let ix_data = crate::instruction::SetOracleStubPrice { _price: price };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
         data: ix_data.data(),
     }
 }

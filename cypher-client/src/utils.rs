@@ -211,6 +211,12 @@ pub fn derive_oracle_products_address(symbol: &[u8]) -> (Pubkey, u8) {
     (address, bump)
 }
 
+pub fn derive_oracle_stub_address(symbol: &[u8]) -> (Pubkey, u8) {
+    let (address, bump) =
+        Pubkey::find_program_address(&[B_ORACLE_STUB, symbol.as_ref()], &crate::id());
+    (address, bump)
+}
+
 pub fn derive_account_address(authority: &Pubkey, account_number: u8) -> (Pubkey, u8) {
     let (address, bump) = Pubkey::find_program_address(
         &[

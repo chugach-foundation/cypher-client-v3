@@ -10,7 +10,10 @@ use anchor_spl::dex::serum_dex::matching::Side as DexSide;
 use bonfida_utils::fp_math::fp32_mul;
 use constants::{INV_ONE_HUNDRED_FIXED, QUOTE_TOKEN_IDX};
 use fixed::types::I80F48;
+use std::mem::take;
 use utils::adjust_decimals;
+
+use crate::constants::TOKENS_MAX_CNT;
 
 anchor_gen::generate_cpi_interface!(
     idl_path = "idl.json",
@@ -125,6 +128,70 @@ impl ToString for Side {
             Side::Bid => "Bid".to_string(),
             Side::Ask => "Ask".to_string(),
         }
+    }
+}
+
+impl PartialEq for PositionSlot {
+    fn eq(&self, other: &Self) -> bool {
+        self.derivative == other.derivative && self.spot == other.spot
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.derivative != other.derivative && self.spot != other.spot
+    }
+}
+
+impl PartialEq for SpotPosition {
+    fn eq(&self, other: &Self) -> bool {
+        self.cache_index == other.cache_index
+            && self.open_orders_cache == other.open_orders_cache
+            && self.position == other.position
+            && self.token_mint == other.token_mint
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.cache_index != other.cache_index
+            && self.open_orders_cache != other.open_orders_cache
+            && self.position != other.position
+            && self.token_mint != other.token_mint
+    }
+}
+
+impl PartialEq for DerivativePosition {
+    fn eq(&self, other: &Self) -> bool {
+        self.cache_index == other.cache_index
+            && self.open_orders_cache == other.open_orders_cache
+            && self.base_position == other.base_position
+            && self.market == other.market
+            && self.long_funding_settled == other.long_funding_settled
+            && self.short_funding_settled == other.short_funding_settled
+            && self.market_type == other.market_type
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.cache_index != other.cache_index
+            && self.open_orders_cache != other.open_orders_cache
+            && self.base_position != other.base_position
+            && self.market != other.market
+            && self.long_funding_settled != other.long_funding_settled
+            && self.short_funding_settled != other.short_funding_settled
+            && self.market_type != other.market_type
+    }
+}
+
+impl PartialEq for OpenOrdersCache {
+    fn eq(&self, other: &Self) -> bool {
+        self.coin_free == other.coin_free
+            && self.coin_total == other.coin_total
+            && self.pc_free == other.pc_free
+            && self.pc_total == other.pc_total
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.coin_free != other.coin_free
+            && self.coin_total != other.coin_total
+            && self.pc_free != other.pc_free
+            && self.pc_total != other.pc_total
     }
 }
 
@@ -493,22 +560,33 @@ impl PartialEq for OrderType {
 impl Clearing {
     pub fn init_margin_ratio(&self) -> I80F48 {
         I80F48::from(self.config.init_margin)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
     }
 
     pub fn maint_margin_ratio(&self) -> I80F48 {
         I80F48::from(self.config.maint_margin)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
     }
 
     pub fn target_margin_ratio(&self) -> I80F48 {
         I80F48::from(self.config.target_margin)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
     }
 
     pub fn liq_liqor_fee(&self) -> I80F48 {
         I80F48::from(self.config.liq_liqor_fee)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .and_then(|n| n.checked_add(I80F48::ONE))
+            .unwrap()
     }
 
     pub fn liq_insurance_fee(&self) -> I80F48 {
         I80F48::from(self.config.liq_insurance_fee)
+            .checked_mul(INV_ONE_HUNDRED_FIXED)
+            .unwrap()
     }
 
     pub fn get_fee_tiers(&self) -> Vec<FeeTier> {
@@ -708,6 +786,60 @@ impl CypherAccount {
 }
 
 impl CypherSubAccount {
+    /// positions iterator
+    pub fn iter_position_slots<'a>(&'a self) -> impl Iterator<Item = &PositionSlot> {
+        struct Iter<'a> {
+            positions: &'a [PositionSlot],
+        }
+        impl<'a> Iterator for Iter<'a> {
+            type Item = &'a PositionSlot;
+            fn next(&mut self) -> Option<Self::Item> {
+                loop {
+                    match take(&mut self.positions).split_first() {
+                        Some((head, rems)) => {
+                            self.positions = rems;
+                            if *head != PositionSlot::default() {
+                                return Some(head);
+                            }
+                        }
+                        None => return None,
+                    }
+                }
+            }
+        }
+        Iter {
+            positions: &self.positions[..],
+        }
+    }
+
+    /// gets the position index for the given identifier.
+    ///
+    /// this can be a token mint for a spot position or a market's public key for derivatives
+    pub fn get_position_idx(&self, identifier: &Pubkey, is_spot: bool) -> Option<usize> {
+        if *identifier == quote_mint::ID && is_spot {
+            return Some(QUOTE_TOKEN_IDX);
+        }
+        self.iter_position_slots().position(|p| {
+            if is_spot {
+                p.spot.token_mint == *identifier
+            } else {
+                p.derivative.market == *identifier
+            }
+        })
+    }
+
+    /// gets the derivative position at the given index
+    pub fn get_spot_position(&self, position_idx: usize) -> &SpotPosition {
+        assert!(position_idx < TOKENS_MAX_CNT);
+        &self.positions[position_idx].spot
+    }
+
+    /// gets the derivative position at the given index
+    pub fn get_derivative_position(&self, position_idx: usize) -> &DerivativePosition {
+        assert!(position_idx < TOKENS_MAX_CNT);
+        &self.positions[position_idx].derivative
+    }
+
     /// gets the c-ratio for this sub account
     pub fn get_margin_c_ratio(
         &self,
@@ -949,6 +1081,100 @@ impl CypherSubAccount {
         }
 
         liabilities_value
+    }
+
+    pub fn is_bankrupt(&self, clearing: &Clearing, cache_account: &CacheAccount) -> Result<bool> {
+        let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
+        let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
+        let quote_position_size = quote_position.total_position(quote_cache);
+        // if the quote token has a deposit we'll use it as the starter for the largest deposit value
+        let mut largest_deposit_value = if quote_position_size.is_positive() {
+            adjust_decimals(
+                quote_position_size
+                    .checked_mul(quote_cache.oracle_price())
+                    .unwrap(),
+                quote_cache.decimals,
+            )
+        } else {
+            I80F48::ZERO
+        };
+        // if the quote token has a borrow we'll use it's value as the starter for the lowest borrow price
+        let mut lowest_borrow_price = if quote_position_size.is_negative() {
+            quote_cache.oracle_price()
+        } else {
+            I80F48::MAX
+        };
+
+        for position in self.iter_position_slots() {
+            // spot
+            if position.spot.token_mint != Pubkey::default() {
+                let cache = cache_account.get_price_cache(position.spot.cache_index as usize);
+                let spot_oracle_price = cache.oracle_price();
+                let spot_position = position.spot.total_position(cache);
+                // calculate spot deposit value, if the spot position actually represents a deposit
+                let spot_deposit_value = if spot_position.is_positive() {
+                    adjust_decimals(
+                        spot_position.checked_mul(spot_oracle_price).unwrap(),
+                        cache.decimals,
+                    )
+                } else {
+                    I80F48::ZERO
+                };
+                // if the spot position represents a borrow, update the lowest borrow price
+                if spot_position.is_negative() {
+                    lowest_borrow_price = I80F48::min(lowest_borrow_price, spot_oracle_price);
+                }
+                // update largest deposit value according to previously calculated spot deposit value
+                largest_deposit_value = I80F48::max(largest_deposit_value, spot_deposit_value);
+            }
+
+            // derivatives
+            if position.derivative.market != Pubkey::default() {
+                let cache = cache_account.get_price_cache(position.derivative.cache_index as usize);
+                let decimals = if position.derivative.market_type == MarketType::PerpetualFuture {
+                    cache.perp_decimals
+                } else {
+                    cache.futures_decimals
+                };
+                // convert the orresponding price to fixed type
+                let derivative_price =
+                    if position.derivative.market_type == MarketType::PerpetualFuture {
+                        cache.oracle_price()
+                    } else {
+                        cache.market_price()
+                    };
+                let derivative_position = position.derivative.base_position();
+                // calculate derivative deposit value, if the derivative position actually represents a deposit
+                let derivative_deposit_value = if derivative_position.is_positive() {
+                    adjust_decimals(
+                        derivative_position.checked_mul(derivative_price).unwrap(),
+                        decimals,
+                    )
+                } else {
+                    I80F48::ZERO
+                };
+                // if the derivative position represents a borrow, update the lowest borrow price
+                if derivative_position.is_negative() {
+                    lowest_borrow_price = I80F48::min(lowest_borrow_price, derivative_price);
+                }
+                // update largest deposit value according to previously calculated derivative deposit value
+                largest_deposit_value =
+                    I80F48::max(largest_deposit_value, derivative_deposit_value);
+            }
+        }
+
+        if lowest_borrow_price == I80F48::MAX {
+            return Ok(false);
+        }
+
+        let liq_fee = clearing.liq_liqor_fee() + clearing.liq_insurance_fee();
+        let collateral_for_min_borrow_unit = liq_fee.checked_mul(lowest_borrow_price).unwrap();
+
+        if collateral_for_min_borrow_unit > largest_deposit_value {
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 

@@ -78,46 +78,10 @@ impl StreamingAccountInfoService {
     /// and then subscribes to changes via [`PubsubClient`].
     #[inline(always)]
     pub async fn start_service(self: &Arc<Self>) {
-        let accounts = self.accounts.read().await;
-        match self.get_account_infos(&accounts).await {
-            Ok(()) => (),
-            Err(e) => {
-                warn!(
-                    "There was an error while fetching initial account infos: {}",
-                    e.to_string()
-                );
-            }
+        {
+            let accounts = self.accounts.read().await;
+            self.add_subscriptions(&accounts).await;
         }
-
-        let mut handlers = self.handlers.write().await;
-
-        for account in accounts.iter() {
-            let handler = Arc::new(SubscriptionHandler::new(
-                Arc::clone(&self.pubsub_client),
-                Arc::clone(&self.cache),
-                channel::<bool>(1).0,
-                *account,
-            ));
-            let cloned_handler = Arc::clone(&handler);
-            handlers.push(handler);
-            tokio::spawn(async move {
-                match cloned_handler.run().await {
-                    Ok(_) => (),
-                    Err(e) => {
-                        warn!(
-                            "There was an error running subscription handler for account {}: {}",
-                            cloned_handler.account,
-                            e.to_string()
-                        );
-                    }
-                }
-            });
-        }
-
-        // drop the references so new subscriptions can be added
-        // after we start waiting on the shutdown receiver
-        drop(handlers);
-        drop(accounts);
 
         let mut shutdown_receiver = self.shutdown.write().await;
 
@@ -127,15 +91,15 @@ impl StreamingAccountInfoService {
                 let handlers = self.handlers.read().await;
                 for handler in handlers.iter() {
                     match handler.stop().await {
-                        Ok(_) => (),
+                        Ok(_) => {
+                            info!("Successfully sent shutdown signal to handler: {}", handler.account);
+                        },
                         Err(e) => {
                             warn!(
                                 "There was an error removing subscription handler for account {}: {}",
-
                                 handler.account,
                                 e.to_string()
                             );
-                            continue;
                         }
                     }
                 }

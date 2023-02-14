@@ -282,6 +282,9 @@ impl UserContext {
             address: *account,
             state: account_state,
         };
+        if self.authority == Pubkey::default() {
+            self.authority = self.account_ctx.state.authority;
+        }
     }
 
     /// Reloads a [`CypherSubAccount`] from the given account data.
@@ -314,6 +317,10 @@ impl UserContext {
                     *sub_account_ctx = new_sub_account_ctx.clone();
                 }
             }
+        }
+
+        if self.authority == Pubkey::default() {
+            self.authority = new_sub_account_ctx.state.authority;
         }
     }
 

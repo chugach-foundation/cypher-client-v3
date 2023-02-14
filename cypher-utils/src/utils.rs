@@ -2,7 +2,7 @@ use anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator, Owner, Ze
 use bytemuck::Pod;
 use cypher_client::serum::parse_dex_account;
 use log::warn;
-use solana_account_decoder::UiAccountEncoding;
+use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use solana_client::{
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig},
     rpc_filter::RpcFilterType,
@@ -133,6 +133,37 @@ pub async fn get_program_accounts(
         .await;
 
     match accounts_res {
+        Ok(a) => Ok(a),
+        Err(e) => Err(e),
+    }
+}
+
+/// Gets all program accounts according to the given filters for the given program.
+/// This request does not fetch account data.
+pub async fn get_program_accounts_without_data(
+    rpc_client: &RpcClient,
+    filters: Vec<RpcFilterType>,
+    program_id: &Pubkey,
+) -> Result<Vec<(Pubkey, Account)>, ClientError> {
+    match rpc_client
+        .get_program_accounts_with_config(
+            program_id,
+            RpcProgramAccountsConfig {
+                filters: Some(filters),
+                account_config: RpcAccountInfoConfig {
+                    encoding: Some(UiAccountEncoding::Base64),
+                    commitment: Some(CommitmentConfig::default()),
+                    data_slice: Some(UiDataSliceConfig {
+                        offset: 0,
+                        length: 0,
+                    }),
+                    ..RpcAccountInfoConfig::default()
+                },
+                ..RpcProgramAccountsConfig::default()
+            },
+        )
+        .await
+    {
         Ok(a) => Ok(a),
         Err(e) => Err(e),
     }

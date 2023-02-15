@@ -4,6 +4,7 @@ use {
         constants::{JSON_RPC_URL, PUBSUB_RPC_URL},
         services::utils::get_account_info,
     },
+    dashmap::DashMap,
     futures::StreamExt,
     log::{info, warn},
     solana_account_decoder::UiAccountEncoding,
@@ -17,21 +18,17 @@ use {
     },
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey},
     std::sync::Arc,
-    tokio::sync::{
-        broadcast::{channel, error::SendError, Receiver, Sender},
-        RwLock,
-    },
+    tokio::sync::broadcast::{channel, error::SendError, Sender},
 };
 
 /// A Service which allows subscribing to Accounts and receiving updates
 /// to their state via an [`AccountsCache`].
 pub struct StreamingAccountInfoService {
-    pub cache: Arc<AccountsCache>,
-    pub pubsub_client: Arc<PubsubClient>,
-    pub rpc_client: Arc<RpcClient>,
-    pub accounts: RwLock<Vec<Pubkey>>,
-    shutdown: RwLock<Receiver<bool>>,
-    handlers: RwLock<Vec<Arc<SubscriptionHandler>>>,
+    cache: Arc<AccountsCache>,
+    pubsub_client: Arc<PubsubClient>,
+    rpc_client: Arc<RpcClient>,
+    pub subscriptions_map: DashMap<Pubkey, Arc<SubscriptionHandler>>,
+    shutdown: Arc<Sender<bool>>,
 }
 
 impl Default for StreamingAccountInfoService {
@@ -41,9 +38,8 @@ impl Default for StreamingAccountInfoService {
             cache: Arc::new(AccountsCache::default()),
             pubsub_client: Arc::new(pubsub_client.unwrap()),
             rpc_client: Arc::new(RpcClient::new(JSON_RPC_URL.to_string())),
-            accounts: RwLock::new(Vec::new()),
-            shutdown: RwLock::new(channel::<bool>(1).1),
-            handlers: RwLock::new(Vec::new()),
+            shutdown: Arc::new(channel::<bool>(1).0),
+            subscriptions_map: DashMap::new(),
         }
     }
 }
@@ -60,16 +56,14 @@ impl StreamingAccountInfoService {
         cache: Arc<AccountsCache>,
         pubsub_client: Arc<PubsubClient>,
         rpc_client: Arc<RpcClient>,
-        shutdown: Receiver<bool>,
-        accounts: &[Pubkey],
+        shutdown: Arc<Sender<bool>>,
     ) -> Self {
         Self {
             cache,
             pubsub_client,
             rpc_client,
-            shutdown: RwLock::new(shutdown),
-            accounts: RwLock::new(accounts.to_vec()),
-            handlers: RwLock::new(Vec::new()),
+            shutdown,
+            subscriptions_map: DashMap::new(),
         }
     }
 
@@ -78,18 +72,12 @@ impl StreamingAccountInfoService {
     /// and then subscribes to changes via [`PubsubClient`].
     #[inline(always)]
     pub async fn start_service(self: &Arc<Self>) {
-        {
-            let accounts = self.accounts.read().await;
-            self.add_subscriptions(&accounts).await;
-        }
-
-        let mut shutdown_receiver = self.shutdown.write().await;
+        let mut shutdown_receiver = self.shutdown.subscribe();
 
         tokio::select! {
             _ = shutdown_receiver.recv() => {
                 info!("Shutting down subscription handlers.");
-                let handlers = self.handlers.read().await;
-                for handler in handlers.iter() {
+                for handler in self.subscriptions_map.iter() {
                     match handler.stop().await {
                         Ok(_) => {
                             info!("Successfully sent shutdown signal to handler: {}", handler.account);
@@ -120,15 +108,12 @@ impl StreamingAccountInfoService {
             }
         }
 
-        let mut handlers_vec = Vec::new();
-        let mut accounts_vec = Vec::new();
-
         for account in new_accounts.iter() {
             info!("Adding subscription handler for: {}", account);
             let handler = Arc::new(SubscriptionHandler::new(
                 Arc::clone(&self.pubsub_client),
                 Arc::clone(&self.cache),
-                channel::<bool>(1).0,
+                Arc::new(channel::<bool>(1).0),
                 *account,
             ));
             let cloned_handler = Arc::clone(&handler);
@@ -149,16 +134,9 @@ impl StreamingAccountInfoService {
                     }
                 }
             });
-            accounts_vec.push(*account);
-            handlers_vec.push(handler);
+            self.subscriptions_map.insert(*account, handler);
             info!("Successfully added subscription handler for: {}.", account);
         }
-        let mut handlers = self.handlers.write().await;
-        handlers.extend(handlers_vec);
-        drop(handlers);
-        let mut accounts = self.accounts.write().await;
-        accounts.extend(accounts_vec);
-        drop(accounts);
         info!(
             "Successfully added {} new subscriptions.",
             new_accounts.len()
@@ -168,41 +146,40 @@ impl StreamingAccountInfoService {
     /// Attempts to remove existing subscriptions from the service.
     #[inline(always)]
     pub async fn remove_subscriptions(self: &Arc<Self>, accounts: &[Pubkey]) {
-        let mut idxs: Vec<usize> = Vec::new();
-        let handlers = self.handlers.read().await;
+        let mut accounts_to_remove = Vec::new();
+        let handlers = self.subscriptions_map.iter();
 
-        for (idx, handler) in handlers.iter().enumerate() {
-            if accounts.contains(&handler.account) {
-                match handler.stop().await {
-                    Ok(_) => (),
+        for (idx, handler_ref) in self.subscriptions_map.iter().enumerate() {
+            if accounts.contains(&handler_ref.account) {
+                accounts_to_remove.push(handler_ref.account);
+            }
+        }
+
+        for account in accounts_to_remove.iter() {
+            match self.subscriptions_map.remove(&account) {
+                Some(handler) => match handler.1.stop().await {
+                    Ok(_) => {
+                        info!(
+                            "Successfully sent shutdown signal to handler for account: {}",
+                            handler.0
+                        );
+                    }
                     Err(e) => {
                         warn!(
                             "There was an error removing subscription handler for account {}: {}",
-                            handler.account,
+                            handler.0,
                             e.to_string()
                         );
                         continue;
                     }
+                },
+                None => {
+                    warn!(
+                        "Failed to remove subscription handler for account: {}",
+                        account
+                    );
                 }
-                idxs.push(idx);
-            }
-        }
-        drop(handlers);
-
-        // check if we actually have indices to remove to avoid getting the locks
-        if !idxs.is_empty() {
-            // reverse the indices so we don't have to worry about
-            // the elements shifting inside the vector whenever we remove an element
-            idxs.sort();
-            idxs.reverse();
-            let mut handlers = self.handlers.write().await;
-            let mut accounts = self.accounts.write().await;
-            for idx in idxs.iter() {
-                handlers.remove(*idx);
-                accounts.remove(*idx);
-            }
-            drop(handlers);
-            drop(accounts);
+            };
         }
     }
 
@@ -254,10 +231,10 @@ impl StreamingAccountInfoService {
 
 /// The subscription handler which is responsible for processing updates
 /// to an Account's state.
-struct SubscriptionHandler {
+pub struct SubscriptionHandler {
     cache: Arc<AccountsCache>,
     pubsub_client: Arc<PubsubClient>,
-    shutdown: RwLock<Sender<bool>>,
+    shutdown: Arc<Sender<bool>>,
     pub account: Pubkey,
 }
 
@@ -266,13 +243,13 @@ impl SubscriptionHandler {
     pub fn new(
         pubsub_client: Arc<PubsubClient>,
         cache: Arc<AccountsCache>,
-        shutdown: Sender<bool>,
+        shutdown: Arc<Sender<bool>>,
         account: Pubkey,
     ) -> Self {
         Self {
             cache,
             pubsub_client,
-            shutdown: RwLock::new(shutdown),
+            shutdown,
             account,
         }
     }
@@ -282,8 +259,7 @@ impl SubscriptionHandler {
     /// for the provided Account in it's [`AccountsCache`].
     #[inline(always)]
     pub async fn run(self: &Arc<Self>) -> Result<(), PubsubClientError> {
-        let shutdown = self.shutdown.read().await;
-        let mut shutdown_receiver = shutdown.subscribe();
+        let mut shutdown_receiver = self.shutdown.subscribe();
         let sub = match self
             .pubsub_client
             .account_subscribe(
@@ -338,7 +314,6 @@ impl SubscriptionHandler {
     /// Stops the subscription handler from processing additional messages.
     #[inline(always)]
     pub async fn stop(self: &Arc<Self>) -> Result<usize, SendError<bool>> {
-        let shutdown = self.shutdown.write().await;
-        shutdown.send(true)
+        self.shutdown.send(true)
     }
 }

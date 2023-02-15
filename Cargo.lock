@@ -1109,6 +1109,7 @@ dependencies = [
  "chrono",
  "cypher-client",
  "dashmap",
+ "fixed",
  "futures",
  "log",
  "num-traits",

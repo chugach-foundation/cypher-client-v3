@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use anchor_spl::token::{spl_token, TokenAccount};
 use cypher_client::{
     instructions::deposit_funds,
@@ -7,9 +5,12 @@ use cypher_client::{
         derive_pool_node_vault_address, derive_pool_node_vault_signer_address,
         derive_token_address, get_zero_copy_account,
     },
-    wrapped_sol, DerivativePosition, PositionSlot, SpotPosition,
+    wrapped_sol, DerivativePosition, MarginCollateralRatioType, PositionSlot, SpotPosition,
+    SubAccountMargining,
 };
+use fixed::types::I80F48;
 use solana_sdk::{instruction::Instruction, signature::Signature};
+use std::fmt::Debug;
 use {
     cypher_client::{
         instructions::{create_account, create_sub_account, withdraw_funds},
@@ -26,7 +27,7 @@ use crate::utils::{
     get_multiple_cypher_zero_copy_accounts, send_transaction, send_transactions,
 };
 
-use super::ContextError;
+use super::{CacheContext, ContextError};
 
 /// Represents a [`CypherSubAccount`].
 #[derive(Default, Clone)]
@@ -678,6 +679,33 @@ impl UserContext {
             }
         }
         None
+    }
+
+    /// gets the c-ratio for this account
+    pub fn get_margin_c_ratio(
+        &self,
+        cache_ctx: &CacheContext,
+        mcr_type: MarginCollateralRatioType,
+    ) -> I80F48 {
+        let mut assets_value = I80F48::ZERO;
+        let mut liabilities_value = I80F48::ZERO;
+
+        for sub_account_ctx in self.sub_account_ctxs.iter() {
+            if sub_account_ctx.state.margining_type == SubAccountMargining::Cross {
+                assets_value += sub_account_ctx
+                    .state
+                    .get_assets_value(cache_ctx.state.as_ref(), mcr_type);
+                liabilities_value += sub_account_ctx
+                    .state
+                    .get_liabilities_value(cache_ctx.state.as_ref(), mcr_type);
+            }
+        }
+
+        if liabilities_value == I80F48::ZERO {
+            I80F48::MAX
+        } else {
+            assets_value / liabilities_value
+        }
     }
 }
 

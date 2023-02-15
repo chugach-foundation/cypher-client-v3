@@ -6,9 +6,10 @@
   <p>
     <strong>cypher v3 rust clients</strong>
   </p>
-  </br>
   <p>
-    <a href="https://discord.gg/jr9Mu4Uz25"><img alt="Discord Chat" src="https://img.shields.io/discord/880917405356945449?color=blue&style=flat-square" /></a>
+    <a href="https://discord.gg/jr9Mu4Uz25">
+      <img alt="Discord Chat" src="https://img.shields.io/discord/880917405356945449?color=blue&style=flat-square" />
+    </a>
   </p>
   <h4>
     <a href="https://cypher.trade/">cypher.trade</a>

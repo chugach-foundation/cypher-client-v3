@@ -16,7 +16,6 @@
     <span> | </span>
     <a href="https://github.com/chugach-foundation/cypher-client-ts-v3">TypeScript Client</a>
   </h4>
-  </br>
 </div>
 
 #

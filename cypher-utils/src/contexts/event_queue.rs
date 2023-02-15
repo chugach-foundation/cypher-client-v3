@@ -39,6 +39,7 @@ pub trait GenericEventQueue: Send + Sync {
 }
 
 /// Represents an AOB Event Queue.
+#[derive(Default)]
 pub struct AgnosticEventQueueContext {
     pub market: Pubkey,
     pub event_queue: Pubkey,
@@ -46,19 +47,6 @@ pub struct AgnosticEventQueueContext {
     pub head: u64,
     pub events: Vec<FillEvent>,
     pub callbacks: Vec<CallBackInfo>,
-}
-
-impl Default for AgnosticEventQueueContext {
-    fn default() -> Self {
-        Self {
-            market: Pubkey::default(),
-            event_queue: Pubkey::default(),
-            count: 0,
-            head: 0,
-            events: Vec::new(),
-            callbacks: Vec::new(),
-        }
-    }
 }
 
 impl GenericEventQueue for AgnosticEventQueueContext {
@@ -227,24 +215,13 @@ impl AgnosticEventQueueContext {
 }
 
 /// Represents a Serum Event Queue.
+#[derive(Default)]
 pub struct SerumEventQueueContext {
     pub market: Pubkey,
     pub event_queue: Pubkey,
     pub count: u64,
     pub head: u64,
     pub events: Vec<Event>,
-}
-
-impl Default for SerumEventQueueContext {
-    fn default() -> Self {
-        Self {
-            market: Pubkey::default(),
-            event_queue: Pubkey::default(),
-            count: 0,
-            head: 0,
-            events: Vec::new(),
-        }
-    }
 }
 
 impl GenericEventQueue for SerumEventQueueContext {

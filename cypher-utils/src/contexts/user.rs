@@ -193,15 +193,8 @@ impl UserContext {
             ),
         ];
 
-        let _ = send_transactions(
-            rpc_client,
-            ixs,
-            authority,
-            true,
-            Some((1_400_000, 1)),
-            None,
-        )
-        .await;
+        let _ =
+            send_transactions(rpc_client, ixs, authority, true, Some((1_400_000, 1)), None).await;
 
         UserContext::load(rpc_client, &authority.pubkey(), Some(account_number)).await
     }
@@ -643,8 +636,8 @@ impl UserContext {
                 .positions
                 .iter()
                 .filter(|p| p.derivative.market == *identifier || p.spot.token_mint == *identifier)
-                .collect::<Vec<&PositionSlot>>()
-                .is_empty()
+                .next()
+                .is_none()
             {
                 return Some(account);
             }
@@ -672,8 +665,8 @@ impl UserContext {
                         p.spot.token_mint == Pubkey::default()
                     }
                 })
-                .collect::<Vec<&PositionSlot>>()
-                .is_empty()
+                .next()
+                .is_none()
             {
                 return Some(account);
             }

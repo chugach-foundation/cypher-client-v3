@@ -1,3 +1,4 @@
+#[allow(clippy::too_many_arguments)]
 use anchor_lang::{Owner, ZeroCopy};
 use anchor_spl::dex::serum_dex::state::MarketState;
 use bytemuck::bytes_of;
@@ -102,9 +103,7 @@ where
     pub async fn load(rpc_client: &Arc<RpcClient>, market: &Pubkey) -> Result<Self, ContextError> {
         match get_cypher_zero_copy_account::<T>(rpc_client, market).await {
             Ok(s) => Ok(Self::new(market, s)),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -125,9 +124,7 @@ where
                 .enumerate()
                 .map(|(idx, state)| Self::new(&markets[idx], state.clone()))
                 .collect()),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -143,9 +140,7 @@ where
                 .iter()
                 .map(|state| Self::new(&state.0, get_zero_copy_account::<T>(&state.1.data)))
                 .collect()),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -395,9 +390,7 @@ impl SpotMarketContext {
                     )
                 })
                 .collect()),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 }

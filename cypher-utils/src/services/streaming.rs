@@ -283,23 +283,20 @@ impl SubscriptionHandler {
         loop {
             tokio::select! {
                 update = stream.next() => {
-                    match update {
-                        Some(account) => {
-                            let account_data = match get_account_info(&account.value) {
-                                Ok(data) => data,
-                                Err(e) => {
-                                    warn!("Failed to decode account data: {}", e.to_string());
-                                    continue;
-                                }
-                            };
-                            info!("Received account update for {}, updating cache.",  self.account);
-                            self.cache.insert(self.account, AccountState {
-                                account: self.account,
-                                data: account_data,
-                                slot: account.context.slot,
-                            }).await;
-                        }
-                        None => ()
+                    if let Some(account) = update {
+                        let account_data = match get_account_info(&account.value) {
+                            Ok(data) => data,
+                            Err(e) => {
+                                warn!("Failed to decode account data: {}", e.to_string());
+                                continue;
+                            }
+                        };
+                        info!("Received account update for {}, updating cache.",  self.account);
+                        self.cache.insert(self.account, AccountState {
+                            account: self.account,
+                            data: account_data,
+                            slot: account.context.slot,
+                        }).await;
                     }
                 },
                 _ = shutdown_receiver.recv() => {

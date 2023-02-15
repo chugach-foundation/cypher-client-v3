@@ -19,6 +19,11 @@ impl TransactionBuilder {
     }
 
     #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.ixs.is_empty()
+    }
+
+    #[inline(always)]
     pub fn add(&mut self, ix: Instruction) {
         self.ixs.push(ix);
     }

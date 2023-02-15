@@ -19,6 +19,7 @@ pub use user::*;
 use solana_client::client_error::ClientError;
 use thiserror::Error;
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum ContextError {
     #[error("Account state is not cached.")]

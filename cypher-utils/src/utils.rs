@@ -413,8 +413,8 @@ pub fn get_create_account_ix(
     pid: &Pubkey,
     extra_rent: Option<u64>,
 ) -> Instruction {
-    let rent = if extra_rent.is_some() {
-        Rent::default().minimum_balance(space) + extra_rent.unwrap()
+    let rent = if let Some(extra) = extra_rent {
+        Rent::default().minimum_balance(space) + extra
     } else {
         Rent::default().minimum_balance(space)
     };
@@ -428,8 +428,6 @@ pub async fn get_dex_account<T: Pod>(
 ) -> Result<T, ClientError> {
     match rpc_client.get_account_data(account).await {
         Ok(a) => Ok(parse_dex_account::<T>(&a)),
-        Err(e) => {
-            Err(e)
-        }
+        Err(e) => Err(e),
     }
 }

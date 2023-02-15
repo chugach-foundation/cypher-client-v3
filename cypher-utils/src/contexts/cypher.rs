@@ -187,29 +187,21 @@ impl CypherContext {
     /// Reloads the [`CypherContext`] from an [`AccountsCache`].
     pub async fn reload(&mut self, cache: Arc<AccountsCache>) {
         let mut cache_guard = self.cache.write().await;
-        if let Ok(()) = cache_guard.reload_from_cache(cache.clone()) {
-            ()
-        };
+        if let Ok(()) = cache_guard.reload_from_cache(cache.clone()) {};
 
         let mut pools = self.pools.write().await;
         for pool in pools.iter_mut() {
-            if let Ok(()) = pool.reload_from_cache(cache.clone()) {
-                ()
-            };
+            if let Ok(()) = pool.reload_from_cache(cache.clone()) {};
         }
 
         let mut perp_markets = self.perp_markets.write().await;
         for perp_market in perp_markets.iter_mut() {
-            if let Ok(()) = perp_market.reload_from_cache(cache.clone()) {
-                ()
-            };
+            if let Ok(()) = perp_market.reload_from_cache(cache.clone()) {};
         }
 
         let mut futures_markets = self.futures_markets.write().await;
         for futures_market in futures_markets.iter_mut() {
-            if let Ok(()) = futures_market.reload_from_cache(cache.clone()) {
-                ()
-            };
+            if let Ok(()) = futures_market.reload_from_cache(cache.clone()) {};
         }
     }
 }

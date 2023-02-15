@@ -34,19 +34,14 @@ impl Default for CacheContext {
 impl CacheContext {
     /// Creates a new [`CacheContext`].
     pub fn new(cache: Box<CacheAccount>) -> Self {
-        Self {
-            state: cache,
-        }
+        Self { state: cache }
     }
 
     /// Loads the cache account.
     pub async fn load(rpc_client: &Arc<RpcClient>) -> Result<Self, ContextError> {
-        match get_cypher_zero_copy_account::<CacheAccount>(rpc_client, &cache_account::id()).await
-        {
+        match get_cypher_zero_copy_account::<CacheAccount>(rpc_client, &cache_account::id()).await {
             Ok(s) => Ok(Self::new(s)),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 

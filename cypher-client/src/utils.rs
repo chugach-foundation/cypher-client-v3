@@ -205,15 +205,13 @@ pub fn derive_private_clearing_address(clearing_number: u8) -> (Pubkey, u8) {
 }
 
 pub fn derive_oracle_products_address(symbol: &[u8]) -> (Pubkey, u8) {
-    let (address, bump) =
-        Pubkey::find_program_address(&[B_ORACLE_PRODUCTS, symbol], &crate::id());
+    let (address, bump) = Pubkey::find_program_address(&[B_ORACLE_PRODUCTS, symbol], &crate::id());
 
     (address, bump)
 }
 
 pub fn derive_oracle_stub_address(symbol: &[u8]) -> (Pubkey, u8) {
-    let (address, bump) =
-        Pubkey::find_program_address(&[B_ORACLE_STUB, symbol], &crate::id());
+    let (address, bump) = Pubkey::find_program_address(&[B_ORACLE_STUB, symbol], &crate::id());
     (address, bump)
 }
 

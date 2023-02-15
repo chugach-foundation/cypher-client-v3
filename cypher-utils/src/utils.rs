@@ -429,7 +429,7 @@ pub async fn get_dex_account<T: Pod>(
     match rpc_client.get_account_data(account).await {
         Ok(a) => Ok(parse_dex_account::<T>(&a)),
         Err(e) => {
-            return Err(e);
+            Err(e)
         }
     }
 }

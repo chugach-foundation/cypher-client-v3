@@ -60,7 +60,7 @@ impl PoolNodeContext {
         match get_cypher_zero_copy_account::<PoolNode>(rpc_client, pool_node).await {
             Ok(s) => Ok(Self::new(pool_node, s)),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -76,14 +76,14 @@ impl PoolNodeContext {
         rpc_client: &Arc<RpcClient>,
         pool_nodes: &[Pubkey],
     ) -> Result<Vec<Self>, ContextError> {
-        match get_multiple_cypher_zero_copy_accounts::<PoolNode>(&rpc_client, pool_nodes).await {
+        match get_multiple_cypher_zero_copy_accounts::<PoolNode>(rpc_client, pool_nodes).await {
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()
                 .map(|(idx, state)| Self::new(&pool_nodes[idx], state.clone()))
                 .collect()),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -97,13 +97,13 @@ impl PoolNodeContext {
         let filters = vec![RpcFilterType::DataSize(
             std::mem::size_of::<PoolNode>() as u64 + 8,
         )];
-        match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await {
+        match get_program_accounts(rpc_client, filters, &cypher_client::id()).await {
             Ok(s) => Ok(s
                 .iter()
                 .map(|state| Self::new(&state.0, get_zero_copy_account::<PoolNode>(&state.1.data)))
                 .collect()),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -225,14 +225,14 @@ impl PoolContext {
         rpc_client: &Arc<RpcClient>,
         pools: &[Pubkey],
     ) -> Result<Vec<Self>, ContextError> {
-        match get_multiple_cypher_zero_copy_accounts::<Pool>(&rpc_client, pools).await {
+        match get_multiple_cypher_zero_copy_accounts::<Pool>(rpc_client, pools).await {
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()
                 .map(|(idx, state)| Self::new(&pools[idx], state.clone(), vec![]))
                 .collect()),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -246,7 +246,7 @@ impl PoolContext {
         let filters = vec![RpcFilterType::DataSize(
             std::mem::size_of::<Pool>() as u64 + 8,
         )];
-        let mut pools = match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await
+        let mut pools = match get_program_accounts(rpc_client, filters, &cypher_client::id()).await
         {
             Ok(s) => s
                 .iter()

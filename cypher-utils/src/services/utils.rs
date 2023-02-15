@@ -27,6 +27,6 @@ pub fn get_account_info(account: &UiAccount) -> Result<Vec<u8>, AccountDecodingE
     let account_data_res = base64::decode(ai);
     match account_data_res {
         Ok(a) => Ok(a),
-        Err(e) => return Err(AccountDecodingError::AccountInfoDecoding(e)),
+        Err(e) => Err(AccountDecodingError::AccountInfoDecoding(e)),
     }
 }

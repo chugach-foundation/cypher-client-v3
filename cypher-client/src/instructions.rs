@@ -1641,7 +1641,7 @@ pub fn set_clearing_fee_mint(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetClearingFeeMint {
-        _fee_mint: fee_mint.clone(),
+        _fee_mint: *fee_mint,
     };
     Instruction {
         program_id: crate::id(),
@@ -1660,7 +1660,7 @@ pub fn set_clearing_authority(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetClearingAuthority {
-        _new_authority: new_authority.clone(),
+        _new_authority: *new_authority,
     };
     Instruction {
         program_id: crate::id(),
@@ -1679,7 +1679,7 @@ pub fn set_perpetual_market_authority(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetPerpetualMarketAuthority {
-        _new_authority: new_authority.clone(),
+        _new_authority: *new_authority,
     };
     Instruction {
         program_id: crate::id(),
@@ -1748,7 +1748,7 @@ pub fn set_futures_market_authority(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetFuturesMarketAuthority {
-        _new_authority: new_authority.clone(),
+        _new_authority: *new_authority,
     };
     Instruction {
         program_id: crate::id(),
@@ -2135,5 +2135,5 @@ fn extend_derivative_liquidation_accounts(
         AccountMeta::new(*quote_pool, false),
         AccountMeta::new(*quote_pool_node, false),
     ]);
-    return Ok(());
+    Ok(())
 }

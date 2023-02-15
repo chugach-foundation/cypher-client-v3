@@ -74,10 +74,10 @@ impl SubAccountContext {
     pub fn get_position(&self, identifier: &Pubkey) -> Option<&PositionSlot> {
         for slot in self.state.positions.iter() {
             if slot.derivative.market == *identifier {
-                return Some(&slot);
+                return Some(slot);
             }
             if slot.spot.token_mint == *identifier {
-                return Some(&slot);
+                return Some(slot);
             }
         }
         None
@@ -194,7 +194,7 @@ impl UserContext {
         ];
 
         let _ = send_transactions(
-            &rpc_client,
+            rpc_client,
             ixs,
             authority,
             true,
@@ -225,7 +225,7 @@ impl UserContext {
             derive_account_address(authority, 0).0
         };
 
-        let account_state = match get_cypher_account(&rpc_client, &account).await {
+        let account_state = match get_cypher_account(rpc_client, &account).await {
             Ok(s) => s,
             Err(e) => {
                 return Err(ContextError::ClientError(e));
@@ -241,7 +241,7 @@ impl UserContext {
 
         let sub_account_ctxs = if !sub_accounts.is_empty() {
             match get_multiple_cypher_zero_copy_accounts::<CypherSubAccount>(
-                &rpc_client,
+                rpc_client,
                 &sub_accounts,
             )
             .await
@@ -361,7 +361,7 @@ impl UserContext {
             sub_accounts_alias,
         )];
 
-        let _ = send_transactions(&rpc_client, ixs, signer, true, Some((1_400_000, 1)), None).await;
+        let _ = send_transactions(rpc_client, ixs, signer, true, Some((1_400_000, 1)), None).await;
 
         self.reload(rpc_client).await
     }
@@ -407,7 +407,7 @@ impl UserContext {
             let token_account = Keypair::new();
             ixs.extend(vec![
                 get_create_account_ix(
-                    &signer,
+                    signer,
                     &token_account,
                     TokenAccount::LEN,
                     &spl_token::id(),
@@ -515,7 +515,7 @@ impl UserContext {
             let token_account = Keypair::new();
             ixs.extend(vec![
                 get_create_account_ix(
-                    &signer,
+                    signer,
                     &token_account,
                     TokenAccount::LEN,
                     &spl_token::id(),
@@ -590,7 +590,7 @@ impl UserContext {
     /// request.
     pub async fn reload(&mut self, rpc_client: &Arc<RpcClient>) -> Result<(), ContextError> {
         self.account_ctx.state =
-            match get_cypher_account(&rpc_client, &self.account_ctx.address).await {
+            match get_cypher_account(rpc_client, &self.account_ctx.address).await {
                 Ok(s) => s,
                 Err(e) => {
                     return Err(ContextError::ClientError(e));
@@ -608,7 +608,7 @@ impl UserContext {
 
         self.sub_account_ctxs = if !sub_accounts.is_empty() {
             match get_multiple_cypher_zero_copy_accounts::<CypherSubAccount>(
-                &rpc_client,
+                rpc_client,
                 &sub_accounts,
             )
             .await
@@ -646,7 +646,7 @@ impl UserContext {
                 .collect::<Vec<&PositionSlot>>()
                 .is_empty()
             {
-                return Some(&account);
+                return Some(account);
             }
         }
         None
@@ -675,7 +675,7 @@ impl UserContext {
                 .collect::<Vec<&PositionSlot>>()
                 .is_empty()
             {
-                return Some(&account);
+                return Some(account);
             }
         }
         None

@@ -54,7 +54,7 @@ impl GenericOpenOrders for AgnosticOpenOrdersContext {
             let order = self.state.open_orders[i];
 
             if order.order_id != u128::default() {
-                let ob_order = get_orderbook_line(orderbook, order.order_id, order.side.into());
+                let ob_order = get_orderbook_line(orderbook, order.order_id, order.side);
 
                 if ob_order.is_some() {
                     let ob_order = ob_order.unwrap();

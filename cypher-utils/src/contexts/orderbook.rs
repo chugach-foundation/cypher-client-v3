@@ -326,7 +326,7 @@ impl AgnosticOrderBookContext {
         } else {
             AccountTag::Asks
         };
-        let mut data = data.to_vec().clone();
+        let mut data = data.to_vec();
         let side_state: AobSlab<CallBackInfo> = load_book_side(&mut data, account_tag);
 
         let orders = get_aob_orders(market_state, side_state, side);
@@ -350,7 +350,7 @@ impl AgnosticOrderBookContext {
         } else {
             AccountTag::Asks
         };
-        let mut data = data.to_vec().clone();
+        let mut data = data.to_vec();
         let side_state: AobSlab<CallBackInfo> = load_book_side(&mut data, account_tag);
 
         let opposite_side_state = if side == Side::Bid {
@@ -480,7 +480,7 @@ impl SerumOrderBookContext {
             return Err(ContextError::MissingAccountState);
         };
         let (_bid_head, bid_data, _bid_tail) = array_refs![&bids_account.data, 5; ..; 7];
-        let bid_data = &mut bid_data[8..].to_vec().clone();
+        let bid_data = &mut bid_data[8..].to_vec();
         let bids_state = Slab::new(bid_data);
 
         let asks_account = if accounts[1].is_some() {
@@ -489,7 +489,7 @@ impl SerumOrderBookContext {
             return Err(ContextError::MissingAccountState);
         };
         let (_ask_head, ask_data, _ask_tai) = array_refs![&asks_account.data, 5; ..; 7];
-        let ask_data = &mut ask_data[8..].to_vec().clone();
+        let ask_data = &mut ask_data[8..].to_vec();
         let asks_state = Slab::new(ask_data);
 
         let bid_orders = get_serum_orders(market_state, bids_state, Side::Bid);
@@ -523,7 +523,7 @@ impl SerumOrderBookContext {
             }
         };
         let (_bid_head, bid_data, _bid_tail) = array_refs![&bids_account_state.data, 5; ..; 7];
-        let bid_data = &mut bid_data[8..].to_vec().clone();
+        let bid_data = &mut bid_data[8..].to_vec();
         let bids_state = Slab::new(bid_data);
 
         let asks_account_state = match cache.get(asks) {
@@ -533,7 +533,7 @@ impl SerumOrderBookContext {
             }
         };
         let (_ask_head, ask_data, _ask_tai) = array_refs![&asks_account_state.data, 5; ..; 7];
-        let ask_data = &mut ask_data[8..].to_vec().clone();
+        let ask_data = &mut ask_data[8..].to_vec();
         let asks_state = Slab::new(ask_data);
 
         let bid_orders = get_serum_orders(market_state, bids_state, Side::Bid);
@@ -559,7 +559,7 @@ impl SerumOrderBookContext {
         side: Side,
     ) {
         let (_side_head, side_data, _side_tail) = array_refs![&data, 5; ..; 7];
-        let side_data = &mut side_data[8..].to_vec().clone();
+        let side_data = &mut side_data[8..].to_vec();
         let side_state = Slab::new(side_data);
 
         let opposite_side_state = if side == Side::Bid {
@@ -587,7 +587,7 @@ impl SerumOrderBookContext {
         side: Side,
     ) -> Self {
         let (_side_head, side_data, _side_tail) = array_refs![&data, 5; ..; 7];
-        let side_data = &mut side_data[8..].to_vec().clone();
+        let side_data = &mut side_data[8..].to_vec();
         let side_state = Slab::new(side_data);
 
         let orders = get_serum_orders(market_state, side_state, side);
@@ -618,7 +618,7 @@ impl SerumOrderBookContext {
             }
         };
         let (_bid_head, bid_data, _bid_tail) = array_refs![&bids_account_state.data, 5; ..; 7];
-        let bid_data = &mut bid_data[8..].to_vec().clone();
+        let bid_data = &mut bid_data[8..].to_vec();
         let bids_state = Slab::new(bid_data);
 
         let asks_account_state = match cache.get(&self.asks) {
@@ -628,7 +628,7 @@ impl SerumOrderBookContext {
             }
         };
         let (_ask_head, ask_data, _ask_tail) = array_refs![&asks_account_state.data, 5; ..; 7];
-        let ask_data = &mut ask_data[8..].to_vec().clone();
+        let ask_data = &mut ask_data[8..].to_vec();
         let asks_state = Slab::new(ask_data);
 
         let bid_orders = get_serum_orders(market_state, bids_state, Side::Bid);

@@ -147,16 +147,16 @@ impl StreamingAccountInfoService {
     #[inline(always)]
     pub async fn remove_subscriptions(self: &Arc<Self>, accounts: &[Pubkey]) {
         let mut accounts_to_remove = Vec::new();
-        let handlers = self.subscriptions_map.iter();
+        let _handlers = self.subscriptions_map.iter();
 
-        for (idx, handler_ref) in self.subscriptions_map.iter().enumerate() {
+        for (_idx, handler_ref) in self.subscriptions_map.iter().enumerate() {
             if accounts.contains(&handler_ref.account) {
                 accounts_to_remove.push(handler_ref.account);
             }
         }
 
         for account in accounts_to_remove.iter() {
-            match self.subscriptions_map.remove(&account) {
+            match self.subscriptions_map.remove(account) {
                 Some(handler) => match handler.1.stop().await {
                     Ok(_) => {
                         info!(

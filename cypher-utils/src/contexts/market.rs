@@ -100,10 +100,10 @@ where
     /// the [`Pubkey`] given is not a valid [`T`] Account or the underlying account does not
     /// have the correct Anchor discriminator for the provided type.
     pub async fn load(rpc_client: &Arc<RpcClient>, market: &Pubkey) -> Result<Self, ContextError> {
-        match get_cypher_zero_copy_account::<T>(&rpc_client, market).await {
+        match get_cypher_zero_copy_account::<T>(rpc_client, market).await {
             Ok(s) => Ok(Self::new(market, s)),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -119,14 +119,14 @@ where
         rpc_client: &Arc<RpcClient>,
         markets: &[Pubkey],
     ) -> Result<Vec<Self>, ContextError> {
-        match get_multiple_cypher_zero_copy_accounts::<T>(&rpc_client, markets).await {
+        match get_multiple_cypher_zero_copy_accounts::<T>(rpc_client, markets).await {
             Ok(s) => Ok(s
                 .iter()
                 .enumerate()
                 .map(|(idx, state)| Self::new(&markets[idx], state.clone()))
                 .collect()),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -138,13 +138,13 @@ where
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn load_all(rpc_client: &Arc<RpcClient>) -> Result<Vec<Self>, ContextError> {
         let filters = vec![RpcFilterType::DataSize(std::mem::size_of::<T>() as u64 + 8)];
-        match get_program_accounts(&rpc_client, filters, &cypher_client::id()).await {
+        match get_program_accounts(rpc_client, filters, &cypher_client::id()).await {
             Ok(s) => Ok(s
                 .iter()
                 .map(|state| Self::new(&state.0, get_zero_copy_account::<T>(&state.1.data)))
                 .collect()),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }
@@ -155,9 +155,9 @@ where
     ///
     /// This function will return an error if something goes wrong during the RPC request.
     pub async fn reload(&mut self, rpc_client: &Arc<RpcClient>) -> Result<(), ContextError> {
-        let state_res = get_cypher_zero_copy_account::<T>(&rpc_client, &self.address).await;
+        let state_res = get_cypher_zero_copy_account::<T>(rpc_client, &self.address).await;
         self.state = match state_res {
-            Ok(s) => s.clone(),
+            Ok(s) => s,
             Err(e) => {
                 return Err(ContextError::ClientError(e));
             }
@@ -396,7 +396,7 @@ impl SpotMarketContext {
                 })
                 .collect()),
             Err(e) => {
-                return Err(ContextError::ClientError(e));
+                Err(ContextError::ClientError(e))
             }
         }
     }

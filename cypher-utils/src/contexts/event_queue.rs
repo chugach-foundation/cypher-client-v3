@@ -145,7 +145,7 @@ impl AgnosticEventQueueContext {
     ///
     /// This function will return an error if the account state does not exist in the cache.
     pub fn from_account_data(market: &Pubkey, event_queue: &Pubkey, data: &[u8]) -> Self {
-        let (eq_header, fills, callbacks) = parse_aob_event_queue(&data);
+        let (eq_header, fills, callbacks) = parse_aob_event_queue(data);
 
         Self::new(
             market,
@@ -193,7 +193,7 @@ impl AgnosticEventQueueContext {
     ///
     /// This function will return an error if the account state does not exist in the cache.
     pub fn reload_from_account_data(&mut self, data: &[u8]) {
-        let (eq_header, new_fills, new_callbacks) = parse_aob_event_queue(&data);
+        let (eq_header, new_fills, new_callbacks) = parse_aob_event_queue(data);
 
         self.count = eq_header.count;
         self.head = eq_header.head;

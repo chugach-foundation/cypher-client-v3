@@ -14,7 +14,8 @@ use crate::{
         CreateAccount, CreateFuturesMarket, CreateOracleProducts, CreateOracleStub,
         CreateOrdersAccount, CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing,
         CreatePublicClearing, CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount,
-        DepositDeliverable, DepositFunds, InitCacheAccount, InitSpotOpenOrders, NewFuturesOrder,
+        DepositDeliverable, DepositFunds, InitCacheAccount, InitSpotOpenOrders,
+        LiquidateFuturesPosition, LiquidatePerpPosition, LiquidateSpotPosition, NewFuturesOrder,
         NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
         SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
         SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams, SetFuturesMarketStatus,
@@ -27,9 +28,9 @@ use crate::{
         UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
-    CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs, CreateOracleProductsArgs,
-    CreatePerpetualMarketArgs, CreatePoolArgs, FeeTierArgs, LiquidityMiningArgs,
-    NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus,
+    quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
+    CreateOracleProductsArgs, CreatePerpetualMarketArgs, CreatePoolArgs, FeeTierArgs,
+    LiquidityMiningArgs, NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus,
 };
 
 pub fn create_public_clearing(
@@ -1874,4 +1875,208 @@ pub fn sweep_pool_fees(
         accounts: accounts.to_account_metas(Some(false)),
         data: ix_data.data(),
     }
+}
+
+pub fn liquidate_spot_position(
+    cache_account: &Pubkey,
+    liqor_clearing: &Pubkey,
+    liqor_account: &Pubkey,
+    liqor_sub_account: &Pubkey,
+    liqee_clearing: &Pubkey,
+    liqee_account: &Pubkey,
+    liqee_sub_account: &Pubkey,
+    asset_mint: &Pubkey,
+    asset_pool_node: &Pubkey,
+    liability_mint: &Pubkey,
+    liability_pool: &Pubkey,
+    liability_pool_node: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = LiquidateSpotPosition {
+        cache_account: *cache_account,
+        liqor_clearing: *liqor_clearing,
+        liqor_account: *liqor_account,
+        liqor_sub_account: *liqor_sub_account,
+        liqee_clearing: *liqee_clearing,
+        liqee_account: *liqee_account,
+        liqee_sub_account: *liqee_sub_account,
+        asset_mint: *asset_mint,
+        asset_pool_node: *asset_pool_node,
+        liability_mint: *liability_mint,
+        liability_pool: *liability_pool,
+        liability_pool_node: *liability_pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::LiquidateSpotPosition {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn liquidate_perp_position(
+    cache_account: &Pubkey,
+    liqor_clearing: &Pubkey,
+    liqor_account: &Pubkey,
+    liqor_sub_account: &Pubkey,
+    liqee_clearing: &Pubkey,
+    liqee_account: &Pubkey,
+    liqee_sub_account: &Pubkey,
+    asset: &Pubkey,
+    asset_market: &Pubkey,
+    liability: &Pubkey,
+    liability_market: &Pubkey,
+    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
+    authority: &Pubkey,
+) -> Result<Instruction, ProgramError> {
+    let accounts = LiquidatePerpPosition {
+        cache_account: *cache_account,
+        liqor_clearing: *liqor_clearing,
+        liqor_account: *liqor_account,
+        liqor_sub_account: *liqor_sub_account,
+        liqee_clearing: *liqee_clearing,
+        liqee_account: *liqee_account,
+        liqee_sub_account: *liqee_sub_account,
+        authority: *authority,
+    };
+    let mut accounts = accounts.to_account_metas(Some(false));
+
+    let ix_data = crate::instruction::LiquidatePerpPosition {
+        _asset: *asset,
+        _liability: *liability,
+    };
+
+    extend_derivative_liquidation_accounts(
+        &mut accounts,
+        asset,
+        asset_market,
+        liability,
+        liability_market,
+        quote_pool,
+        quote_pool_node,
+    )?;
+
+    Ok(Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    })
+}
+
+pub fn liquidate_futures_position(
+    cache_account: &Pubkey,
+    liqor_clearing: &Pubkey,
+    liqor_account: &Pubkey,
+    liqor_sub_account: &Pubkey,
+    liqee_clearing: &Pubkey,
+    liqee_account: &Pubkey,
+    liqee_sub_account: &Pubkey,
+    asset: &Pubkey,
+    asset_market: &Pubkey,
+    liability: &Pubkey,
+    liability_market: &Pubkey,
+    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
+    authority: &Pubkey,
+) -> Result<Instruction, ProgramError> {
+    let accounts = LiquidateFuturesPosition {
+        cache_account: *cache_account,
+        liqor_clearing: *liqor_clearing,
+        liqor_account: *liqor_account,
+        liqor_sub_account: *liqor_sub_account,
+        liqee_clearing: *liqee_clearing,
+        liqee_account: *liqee_account,
+        liqee_sub_account: *liqee_sub_account,
+        authority: *authority,
+    };
+    let mut accounts = accounts.to_account_metas(Some(false));
+
+    let ix_data = crate::instruction::LiquidateFuturesPosition {
+        _asset: *asset,
+        _liability: *liability,
+    };
+
+    extend_derivative_liquidation_accounts(
+        &mut accounts,
+        asset,
+        asset_market,
+        liability,
+        liability_market,
+        quote_pool,
+        quote_pool_node,
+    )?;
+
+    Ok(Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    })
+}
+
+fn extend_derivative_liquidation_accounts(
+    accounts: &mut Vec<AccountMeta>,
+    asset: &Pubkey,
+    asset_market: &Pubkey,
+    liability: &Pubkey,
+    liability_market: &Pubkey,
+    quote_pool: &Pubkey,
+    quote_pool_node: &Pubkey,
+) -> Result<(), ProgramError> {
+    if *asset == quote_mint::id() {
+        if *liability_market == Pubkey::default() {
+            return Err(ProgramError::InvalidArgument);
+        }
+        if *quote_pool == Pubkey::default() {
+            return Err(ProgramError::InvalidArgument);
+        }
+        if *quote_pool_node == Pubkey::default() {
+            return Err(ProgramError::InvalidArgument);
+        }
+        accounts.extend(vec![
+            AccountMeta::new(*liability_market, false),
+            AccountMeta::new(*quote_pool, false),
+            AccountMeta::new(*quote_pool_node, false),
+        ]);
+        return Ok(());
+    }
+
+    if *liability == quote_mint::id() {
+        if *asset_market == Pubkey::default() {
+            return Err(ProgramError::InvalidArgument);
+        }
+        if *quote_pool == Pubkey::default() {
+            return Err(ProgramError::InvalidArgument);
+        }
+        if *quote_pool_node == Pubkey::default() {
+            return Err(ProgramError::InvalidArgument);
+        }
+        accounts.extend(vec![
+            AccountMeta::new(*asset_market, false),
+            AccountMeta::new(*quote_pool, false),
+            AccountMeta::new(*quote_pool_node, false),
+        ]);
+        return Ok(());
+    }
+
+    if *asset_market == Pubkey::default() {
+        return Err(ProgramError::InvalidArgument);
+    }
+    if *liability_market == Pubkey::default() {
+        return Err(ProgramError::InvalidArgument);
+    }
+    if *quote_pool == Pubkey::default() {
+        return Err(ProgramError::InvalidArgument);
+    }
+    if *quote_pool_node == Pubkey::default() {
+        return Err(ProgramError::InvalidArgument);
+    }
+    accounts.extend(vec![
+        AccountMeta::new(*asset_market, false),
+        AccountMeta::new(*liability_market, false),
+        AccountMeta::new(*quote_pool, false),
+        AccountMeta::new(*quote_pool_node, false),
+    ]);
+    return Ok(());
 }

@@ -798,7 +798,9 @@ impl CypherSubAccount {
                     match take(&mut self.positions).split_first() {
                         Some((head, rems)) => {
                             self.positions = rems;
-                            if *head != PositionSlot::default() {
+                            if head.spot.token_mint != Pubkey::default()
+                                || head.derivative.market != Pubkey::default()
+                            {
                                 return Some(head);
                             }
                         }

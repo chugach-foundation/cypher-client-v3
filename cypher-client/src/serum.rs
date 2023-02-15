@@ -1,4 +1,3 @@
-#![allow(clippy::upper_case_acronyms)]
 use {
     anchor_spl::dex::serum_dex::state::{
         Event, EventQueueHeader, QueueHeader, ACCOUNT_HEAD_PADDING, ACCOUNT_TAIL_PADDING,

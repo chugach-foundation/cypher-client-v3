@@ -1,3 +1,4 @@
+#![allow(clippy::ptr_offset_with_cast)]
 use agnostic_orderbook::state::{
     critbit::{Slab as AobSlab, INNER_FLAG},
     AccountTag,
@@ -184,22 +185,12 @@ impl OrderBook {
 }
 
 /// Represents an AOB [`OrderBook`].
+#[derive(Default)]
 pub struct AgnosticOrderBookContext {
     pub market: Pubkey,
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub state: OrderBook,
-}
-
-impl Default for AgnosticOrderBookContext {
-    fn default() -> Self {
-        Self {
-            market: Pubkey::default(),
-            bids: Pubkey::default(),
-            asks: Pubkey::default(),
-            state: OrderBook::default(),
-        }
-    }
 }
 
 impl GenericOrderBook for AgnosticOrderBookContext {
@@ -415,22 +406,12 @@ impl AgnosticOrderBookContext {
 }
 
 /// Represents a Serum [OrderBook].
+#[derive(Default)]
 pub struct SerumOrderBookContext {
     pub market: Pubkey,
     pub bids: Pubkey,
     pub asks: Pubkey,
     pub state: OrderBook,
-}
-
-impl Default for SerumOrderBookContext {
-    fn default() -> Self {
-        Self {
-            market: Pubkey::default(),
-            bids: Pubkey::default(),
-            asks: Pubkey::default(),
-            state: OrderBook::default(),
-        }
-    }
 }
 
 impl GenericOrderBook for SerumOrderBookContext {
@@ -460,6 +441,7 @@ impl SerumOrderBookContext {
     ///
     /// This function will return an error if something goes wrong during the RPC request
     /// or the [`Pubkey`]s given are not valid Serum Slab Accounts.
+    #[allow(clippy::ptr_offset_with_cast)]
     pub async fn load(
         rpc_client: &Arc<RpcClient>,
         market_state: &MarketState,
@@ -509,6 +491,7 @@ impl SerumOrderBookContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
+    #[allow(clippy::ptr_offset_with_cast)]
     pub fn from_cache(
         cache: Arc<AccountsCache>,
         market_state: &MarketState,
@@ -578,6 +561,7 @@ impl SerumOrderBookContext {
     }
 
     /// Loads one [`Side`] of the [`SerumOrderBookContext`] from the given account data.
+    #[allow(clippy::ptr_offset_with_cast)]
     pub fn from_account_data(
         market: &Pubkey,
         bids: &Pubkey,
@@ -606,6 +590,7 @@ impl SerumOrderBookContext {
     /// ### Errors
     ///
     /// This function will return an error if the account state does not exist in the cache.
+    #[allow(clippy::ptr_offset_with_cast)]
     pub fn reload_from_cache(
         &mut self,
         market_state: &MarketState,

@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use anchor_lang::{
     prelude::{AccountMeta, ProgramError, Pubkey, Rent},
     solana_program::{instruction::Instruction, sysvar::SysvarId},

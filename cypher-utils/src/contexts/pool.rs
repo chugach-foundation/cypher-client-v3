@@ -59,9 +59,7 @@ impl PoolNodeContext {
     ) -> Result<Self, ContextError> {
         match get_cypher_zero_copy_account::<PoolNode>(rpc_client, pool_node).await {
             Ok(s) => Ok(Self::new(pool_node, s)),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -82,9 +80,7 @@ impl PoolNodeContext {
                 .enumerate()
                 .map(|(idx, state)| Self::new(&pool_nodes[idx], state.clone()))
                 .collect()),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -102,9 +98,7 @@ impl PoolNodeContext {
                 .iter()
                 .map(|state| Self::new(&state.0, get_zero_copy_account::<PoolNode>(&state.1.data)))
                 .collect()),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -231,9 +225,7 @@ impl PoolContext {
                 .enumerate()
                 .map(|(idx, state)| Self::new(&pools[idx], state.clone(), vec![]))
                 .collect()),
-            Err(e) => {
-                Err(ContextError::ClientError(e))
-            }
+            Err(e) => Err(ContextError::ClientError(e)),
         }
     }
 
@@ -307,8 +299,7 @@ impl PoolContext {
             .pool_nodes
             .iter()
             .map(|pnc| pnc.address)
-            .collect::<Vec<_>>()
-            .contains(pool_node)
+            .any(|p| p == *pool_node)
         {
             for n in self.state.nodes.iter() {
                 if n.pool_node == *pool_node {

@@ -23,10 +23,11 @@ pub struct CallBackInfo {
     pub sub_account_idx: u8,
 }
 
+#[allow(clippy::needless_lifetimes)]
 pub fn load_book_side<'a>(
     account_data: &'a mut [u8],
     expected_tag: AccountTag,
-) -> Slab<'a, CallBackInfo> {
+) -> Slab<'_, CallBackInfo> {
     let callback_info_len = std::mem::size_of::<CallBackInfo>();
     let leaf_size = LeafNode::LEN + callback_info_len;
     let capacity =

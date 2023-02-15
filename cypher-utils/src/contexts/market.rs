@@ -1,4 +1,4 @@
-#[allow(clippy::too_many_arguments)]
+#![allow(clippy::too_many_arguments)]
 use anchor_lang::{Owner, ZeroCopy};
 use anchor_spl::dex::serum_dex::state::MarketState;
 use bytemuck::bytes_of;

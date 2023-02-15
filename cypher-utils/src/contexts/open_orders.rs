@@ -56,8 +56,7 @@ impl GenericOpenOrders for AgnosticOpenOrdersContext {
             if order.order_id != u128::default() {
                 let ob_order = get_orderbook_line(orderbook, order.order_id, order.side);
 
-                if ob_order.is_some() {
-                    let ob_order = ob_order.unwrap();
+                if let Some(ob_order) = ob_order {
                     orders.push(Order {
                         side: order.side,
                         order_id: order.order_id,
@@ -149,8 +148,7 @@ impl GenericOpenOrders for SerumOpenOrdersContext {
                 let side = self.state.slot_side(i as u8).unwrap();
                 let ob_order = get_orderbook_line(orderbook, order_id, side.into());
 
-                if ob_order.is_some() {
-                    let ob_order = ob_order.unwrap();
+                if let Some(ob_order) = ob_order {
                     orders.push(Order {
                         side: side.into(),
                         order_id,

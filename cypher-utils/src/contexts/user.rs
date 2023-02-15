@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use anchor_spl::token::{spl_token, TokenAccount};
 use cypher_client::{
     instructions::deposit_funds,
@@ -301,8 +302,7 @@ impl UserContext {
             .sub_account_ctxs
             .iter()
             .map(|sa| sa.address)
-            .collect::<Vec<_>>()
-            .contains(sub_account)
+            .any(|a| a == *sub_account)
         {
             self.sub_account_ctxs.push(new_sub_account_ctx.clone());
         } else {
@@ -631,13 +631,11 @@ impl UserContext {
     /// [`PerpetualMarket`] or [`FuturesMarket`] pubkey for a derivative position.
     pub fn get_sub_account_with_position(&self, identifier: &Pubkey) -> Option<&SubAccountContext> {
         for account in self.sub_account_ctxs.iter() {
-            if !account
+            if account
                 .state
                 .positions
                 .iter()
-                .filter(|p| p.derivative.market == *identifier || p.spot.token_mint == *identifier)
-                .next()
-                .is_none()
+                .any(|p| p.derivative.market == *identifier || p.spot.token_mint == *identifier)
             {
                 return Some(account);
             }
@@ -654,20 +652,13 @@ impl UserContext {
     /// [`PerpetualMarket`] or [`FuturesMarket`] pubkey for a derivative position.
     pub fn get_sub_account_with_free_slot(&self, is_spot: bool) -> Option<&SubAccountContext> {
         for account in self.sub_account_ctxs.iter() {
-            if !account
-                .state
-                .positions
-                .iter()
-                .filter(|p| {
-                    if is_spot {
-                        p.derivative.market == Pubkey::default()
-                    } else {
-                        p.spot.token_mint == Pubkey::default()
-                    }
-                })
-                .next()
-                .is_none()
-            {
+            if account.state.positions.iter().any(|p| {
+                if is_spot {
+                    p.derivative.market == Pubkey::default()
+                } else {
+                    p.spot.token_mint == Pubkey::default()
+                }
+            }) {
                 return Some(account);
             }
         }

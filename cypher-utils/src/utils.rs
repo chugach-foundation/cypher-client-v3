@@ -307,7 +307,7 @@ pub async fn send_transactions(
     };
 
     for ix in ixs {
-        if txn_builder.len() != 0 {
+        if !txn_builder.is_empty() {
             let tx = txn_builder.build(blockhash, signer, None);
             // we do this to attempt to pack as many ixs in a tx as possible
             // there's more efficient ways to do it but we'll do it in the future
@@ -341,7 +341,7 @@ pub async fn send_transactions(
         }
     }
 
-    if !submitted || txn_builder.len() != 0 {
+    if !submitted || !txn_builder.is_empty() {
         let tx = txn_builder.build(blockhash, signer, None);
         let res = send_transaction(rpc_client, &tx, confirm).await;
         match res {

@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 pub mod aob;
 pub mod constants;
 pub mod instructions;
@@ -135,10 +136,6 @@ impl PartialEq for PositionSlot {
     fn eq(&self, other: &Self) -> bool {
         self.derivative == other.derivative && self.spot == other.spot
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.derivative != other.derivative && self.spot != other.spot
-    }
 }
 
 impl PartialEq for SpotPosition {
@@ -147,13 +144,6 @@ impl PartialEq for SpotPosition {
             && self.open_orders_cache == other.open_orders_cache
             && self.position == other.position
             && self.token_mint == other.token_mint
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.cache_index != other.cache_index
-            && self.open_orders_cache != other.open_orders_cache
-            && self.position != other.position
-            && self.token_mint != other.token_mint
     }
 }
 
@@ -167,16 +157,6 @@ impl PartialEq for DerivativePosition {
             && self.short_funding_settled == other.short_funding_settled
             && self.market_type == other.market_type
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.cache_index != other.cache_index
-            && self.open_orders_cache != other.open_orders_cache
-            && self.base_position != other.base_position
-            && self.market != other.market
-            && self.long_funding_settled != other.long_funding_settled
-            && self.short_funding_settled != other.short_funding_settled
-            && self.market_type != other.market_type
-    }
 }
 
 impl PartialEq for OpenOrdersCache {
@@ -185,13 +165,6 @@ impl PartialEq for OpenOrdersCache {
             && self.coin_total == other.coin_total
             && self.pc_free == other.pc_free
             && self.pc_total == other.pc_total
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.coin_free != other.coin_free
-            && self.coin_total != other.coin_total
-            && self.pc_free != other.pc_free
-            && self.pc_total != other.pc_total
     }
 }
 
@@ -216,27 +189,6 @@ impl PartialEq for OperatingStatus {
             (OperatingStatus::Halted, OperatingStatus::Halted) => true,
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (OperatingStatus::Active, OperatingStatus::Active) => false,
-            (OperatingStatus::Active, OperatingStatus::ReduceOnly) => true,
-            (OperatingStatus::Active, OperatingStatus::CancelOnly) => true,
-            (OperatingStatus::Active, OperatingStatus::Halted) => true,
-            (OperatingStatus::ReduceOnly, OperatingStatus::Active) => true,
-            (OperatingStatus::ReduceOnly, OperatingStatus::ReduceOnly) => false,
-            (OperatingStatus::ReduceOnly, OperatingStatus::CancelOnly) => true,
-            (OperatingStatus::ReduceOnly, OperatingStatus::Halted) => true,
-            (OperatingStatus::CancelOnly, OperatingStatus::Active) => true,
-            (OperatingStatus::CancelOnly, OperatingStatus::ReduceOnly) => true,
-            (OperatingStatus::CancelOnly, OperatingStatus::CancelOnly) => false,
-            (OperatingStatus::CancelOnly, OperatingStatus::Halted) => true,
-            (OperatingStatus::Halted, OperatingStatus::Active) => true,
-            (OperatingStatus::Halted, OperatingStatus::ReduceOnly) => true,
-            (OperatingStatus::Halted, OperatingStatus::CancelOnly) => true,
-            (OperatingStatus::Halted, OperatingStatus::Halted) => false,
-        }
-    }
 }
 
 impl PartialEq for ClearingType {
@@ -246,15 +198,6 @@ impl PartialEq for ClearingType {
             (ClearingType::Public, ClearingType::Private) => false,
             (ClearingType::Private, ClearingType::Public) => false,
             (ClearingType::Private, ClearingType::Private) => true,
-        }
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (ClearingType::Public, ClearingType::Public) => false,
-            (ClearingType::Public, ClearingType::Private) => true,
-            (ClearingType::Private, ClearingType::Public) => true,
-            (ClearingType::Private, ClearingType::Private) => false,
         }
     }
 }
@@ -273,20 +216,6 @@ impl PartialEq for ProductsType {
             (ProductsType::Switchboard, ProductsType::Pyth) => false,
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (ProductsType::Stub, ProductsType::Stub) => false,
-            (ProductsType::Stub, ProductsType::Pyth) => true,
-            (ProductsType::Stub, ProductsType::Switchboard) => true,
-            (ProductsType::Pyth, ProductsType::Pyth) => false,
-            (ProductsType::Pyth, ProductsType::Stub) => true,
-            (ProductsType::Pyth, ProductsType::Switchboard) => true,
-            (ProductsType::Switchboard, ProductsType::Switchboard) => false,
-            (ProductsType::Switchboard, ProductsType::Stub) => true,
-            (ProductsType::Switchboard, ProductsType::Pyth) => true,
-        }
-    }
 }
 
 impl PartialEq for SubAccountMargining {
@@ -298,15 +227,6 @@ impl PartialEq for SubAccountMargining {
             (SubAccountMargining::Isolated, SubAccountMargining::Isolated) => true,
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (SubAccountMargining::Cross, SubAccountMargining::Cross) => false,
-            (SubAccountMargining::Cross, SubAccountMargining::Isolated) => true,
-            (SubAccountMargining::Isolated, SubAccountMargining::Cross) => true,
-            (SubAccountMargining::Isolated, SubAccountMargining::Isolated) => false,
-        }
-    }
 }
 
 impl PartialEq for SettlementType {
@@ -316,15 +236,6 @@ impl PartialEq for SettlementType {
             (SettlementType::CashSettled, SettlementType::PhysicalDelivery) => false,
             (SettlementType::PhysicalDelivery, SettlementType::CashSettled) => false,
             (SettlementType::PhysicalDelivery, SettlementType::PhysicalDelivery) => true,
-        }
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (SettlementType::CashSettled, SettlementType::CashSettled) => false,
-            (SettlementType::CashSettled, SettlementType::PhysicalDelivery) => true,
-            (SettlementType::PhysicalDelivery, SettlementType::CashSettled) => true,
-            (SettlementType::PhysicalDelivery, SettlementType::PhysicalDelivery) => false,
         }
     }
 }
@@ -359,36 +270,6 @@ impl PartialEq for MarketType {
             (MarketType::IndexFuture, MarketType::IndexFuture) => true,
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (MarketType::Default, MarketType::Default) => false,
-            (MarketType::Default, MarketType::PairFuture) => true,
-            (MarketType::Default, MarketType::PerpetualFuture) => true,
-            (MarketType::Default, MarketType::PreIDO) => true,
-            (MarketType::Default, MarketType::IndexFuture) => true,
-            (MarketType::PairFuture, MarketType::Default) => true,
-            (MarketType::PairFuture, MarketType::PairFuture) => false,
-            (MarketType::PairFuture, MarketType::PerpetualFuture) => true,
-            (MarketType::PairFuture, MarketType::PreIDO) => true,
-            (MarketType::PairFuture, MarketType::IndexFuture) => true,
-            (MarketType::PerpetualFuture, MarketType::Default) => true,
-            (MarketType::PerpetualFuture, MarketType::PairFuture) => true,
-            (MarketType::PerpetualFuture, MarketType::PerpetualFuture) => false,
-            (MarketType::PerpetualFuture, MarketType::PreIDO) => true,
-            (MarketType::PerpetualFuture, MarketType::IndexFuture) => true,
-            (MarketType::PreIDO, MarketType::Default) => true,
-            (MarketType::PreIDO, MarketType::PairFuture) => true,
-            (MarketType::PreIDO, MarketType::PerpetualFuture) => true,
-            (MarketType::PreIDO, MarketType::PreIDO) => false,
-            (MarketType::PreIDO, MarketType::IndexFuture) => true,
-            (MarketType::IndexFuture, MarketType::Default) => true,
-            (MarketType::IndexFuture, MarketType::PairFuture) => true,
-            (MarketType::IndexFuture, MarketType::PerpetualFuture) => true,
-            (MarketType::IndexFuture, MarketType::PreIDO) => true,
-            (MarketType::IndexFuture, MarketType::IndexFuture) => false,
-        }
-    }
 }
 
 impl PartialEq for MarginCollateralRatioType {
@@ -409,24 +290,6 @@ impl PartialEq for MarginCollateralRatioType {
             }
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (
-                MarginCollateralRatioType::Initialization,
-                MarginCollateralRatioType::Initialization,
-            ) => false,
-            (MarginCollateralRatioType::Initialization, MarginCollateralRatioType::Maintenance) => {
-                true
-            }
-            (MarginCollateralRatioType::Maintenance, MarginCollateralRatioType::Initialization) => {
-                true
-            }
-            (MarginCollateralRatioType::Maintenance, MarginCollateralRatioType::Maintenance) => {
-                false
-            }
-        }
-    }
 }
 
 impl PartialEq for WhitelistStatus {
@@ -443,20 +306,6 @@ impl PartialEq for WhitelistStatus {
             (WhitelistStatus::Revoked, WhitelistStatus::Revoked) => true,
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (WhitelistStatus::Pending, WhitelistStatus::Pending) => false,
-            (WhitelistStatus::Pending, WhitelistStatus::Active) => true,
-            (WhitelistStatus::Pending, WhitelistStatus::Revoked) => true,
-            (WhitelistStatus::Active, WhitelistStatus::Pending) => true,
-            (WhitelistStatus::Active, WhitelistStatus::Active) => false,
-            (WhitelistStatus::Active, WhitelistStatus::Revoked) => true,
-            (WhitelistStatus::Revoked, WhitelistStatus::Pending) => true,
-            (WhitelistStatus::Revoked, WhitelistStatus::Active) => true,
-            (WhitelistStatus::Revoked, WhitelistStatus::Revoked) => false,
-        }
-    }
 }
 
 impl PartialEq for Side {
@@ -466,15 +315,6 @@ impl PartialEq for Side {
             (Side::Bid, Side::Ask) => false,
             (Side::Ask, Side::Bid) => false,
             (Side::Ask, Side::Ask) => true,
-        }
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Side::Bid, Side::Bid) => false,
-            (Side::Bid, Side::Ask) => true,
-            (Side::Ask, Side::Bid) => true,
-            (Side::Ask, Side::Ask) => false,
         }
     }
 }
@@ -502,29 +342,6 @@ impl PartialEq for DerivativeOrderType {
             (DerivativeOrderType::PostOnly, DerivativeOrderType::PostOnly) => true,
         }
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (DerivativeOrderType::Limit, DerivativeOrderType::Limit) => false,
-            (DerivativeOrderType::Limit, DerivativeOrderType::ImmediateOrCancel) => true,
-            (DerivativeOrderType::Limit, DerivativeOrderType::FillOrKill) => true,
-            (DerivativeOrderType::Limit, DerivativeOrderType::PostOnly) => true,
-            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::Limit) => true,
-            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::ImmediateOrCancel) => {
-                false
-            }
-            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::FillOrKill) => true,
-            (DerivativeOrderType::ImmediateOrCancel, DerivativeOrderType::PostOnly) => true,
-            (DerivativeOrderType::FillOrKill, DerivativeOrderType::Limit) => true,
-            (DerivativeOrderType::FillOrKill, DerivativeOrderType::ImmediateOrCancel) => true,
-            (DerivativeOrderType::FillOrKill, DerivativeOrderType::FillOrKill) => false,
-            (DerivativeOrderType::FillOrKill, DerivativeOrderType::PostOnly) => true,
-            (DerivativeOrderType::PostOnly, DerivativeOrderType::Limit) => true,
-            (DerivativeOrderType::PostOnly, DerivativeOrderType::ImmediateOrCancel) => true,
-            (DerivativeOrderType::PostOnly, DerivativeOrderType::FillOrKill) => true,
-            (DerivativeOrderType::PostOnly, DerivativeOrderType::PostOnly) => false,
-        }
-    }
 }
 
 impl PartialEq for OrderType {
@@ -539,20 +356,6 @@ impl PartialEq for OrderType {
             (OrderType::PostOnly, OrderType::Limit) => false,
             (OrderType::PostOnly, OrderType::ImmediateOrCancel) => false,
             (OrderType::PostOnly, OrderType::PostOnly) => true,
-        }
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        match (self, other) {
-            (OrderType::Limit, OrderType::Limit) => false,
-            (OrderType::Limit, OrderType::ImmediateOrCancel) => true,
-            (OrderType::Limit, OrderType::PostOnly) => true,
-            (OrderType::ImmediateOrCancel, OrderType::Limit) => true,
-            (OrderType::ImmediateOrCancel, OrderType::ImmediateOrCancel) => false,
-            (OrderType::ImmediateOrCancel, OrderType::PostOnly) => true,
-            (OrderType::PostOnly, OrderType::Limit) => true,
-            (OrderType::PostOnly, OrderType::ImmediateOrCancel) => true,
-            (OrderType::PostOnly, OrderType::PostOnly) => false,
         }
     }
 }

@@ -1511,6 +1511,27 @@
       ]
     },
     {
+      "name": "setCacheAuthority",
+      "accounts": [
+        {
+          "name": "cacheAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
       "name": "setClearingAuthority",
       "accounts": [
         {
@@ -1834,6 +1855,27 @@
       ]
     },
     {
+      "name": "setPoolNodeAuthority",
+      "accounts": [
+        {
+          "name": "poolNode",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "publicKey"
+        }
+      ]
+    },
+    {
       "name": "setPoolNodeStatus",
       "accounts": [
         {
@@ -1853,6 +1895,27 @@
           "type": {
             "defined": "OperatingStatus"
           }
+        }
+      ]
+    },
+    {
+      "name": "setPoolAuthority",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "newAuthority",
+          "type": "publicKey"
         }
       ]
     },

@@ -17,15 +17,15 @@ use crate::{
         DepositDeliverable, DepositFunds, InitCacheAccount, InitSpotOpenOrders,
         LiquidateFuturesPosition, LiquidatePerpPosition, LiquidateSpotPosition, NewFuturesOrder,
         NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
-        SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
-        SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams, SetFuturesMarketStatus,
-        SetOracleProducts, SetOracleStubPrice, SetPerpetualMarketAuthority,
+        SetCacheAuthority, SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers,
+        SetFuturesMarketAuthority, SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams,
+        SetFuturesMarketStatus, SetOracleProducts, SetOracleStubPrice, SetPerpetualMarketAuthority,
         SetPerpetualMarketLiquidityMiningInfo, SetPerpetualMarketParams, SetPerpetualMarketStatus,
-        SetPoolDexMarket, SetPoolNodeStatus, SetPoolStatus, SetSubAccountDelegate, SettleFunding,
-        SettleFuturesFunds, SettlePerpFunds, SettlePosition, SettlePositionWithDelivery,
-        SettleSpotFunds, SettleSpotFundsDex, SweepMarketFees, SweepPoolFees,
-        TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate, UpdateMarketExpiration,
-        UpdateTokenIndex, WithdrawFunds,
+        SetPoolAuthority, SetPoolDexMarket, SetPoolNodeAuthority, SetPoolNodeStatus, SetPoolStatus,
+        SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
+        SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex, SweepMarketFees,
+        SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate,
+        UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
@@ -1798,6 +1798,63 @@ pub fn set_futures_market_liquidity_mining_info(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetFuturesMarketLiquidityMiningInfo { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_pool_authority(
+    pool: &Pubkey,
+    authority: &Pubkey,
+    new_authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetPoolAuthority {
+        pool: *pool,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPoolAuthority {
+        _new_authority: *new_authority,
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_pool_node_authority(
+    pool_node: &Pubkey,
+    authority: &Pubkey,
+    new_authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetPoolNodeAuthority {
+        pool_node: *pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPoolNodeAuthority {
+        _new_authority: *new_authority,
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_cache_authority(
+    cache_account: &Pubkey,
+    authority: &Pubkey,
+    new_authority: &Pubkey,
+) -> Instruction {
+    let accounts = SetCacheAuthority {
+        cache_account: *cache_account,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetCacheAuthority {
+        _new_authority: *new_authority,
+    };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

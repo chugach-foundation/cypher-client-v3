@@ -87,9 +87,9 @@ pub mod pyth_quote_price {
 pub mod dex {
     use anchor_lang::declare_id;
     #[cfg(feature = "mainnet-beta")]
-    declare_id!("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin");
+    declare_id!("srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX");
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("DESVgJVGajEgKGXhb6XmqDHGz3VjdgP7rEVESBgxmroY");
+    declare_id!("EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj");
 }
 
 pub mod cache_account {

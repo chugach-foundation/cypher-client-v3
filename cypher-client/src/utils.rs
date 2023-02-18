@@ -5,13 +5,13 @@ use {
         event_queue::{EventQueueHeader, FillEvent},
     },
     anchor_lang::{prelude::*, Discriminator, ZeroCopy},
-    anchor_spl::{associated_token, dex, token::spl_token},
+    anchor_spl::{associated_token, token::spl_token},
     arrayref::array_ref,
     bytemuck::{bytes_of, from_bytes},
     fixed::types::I80F48,
 };
 
-use crate::{constants::*, ClearingType};
+use crate::{constants::*, dex, ClearingType};
 
 pub fn adjust_decimals(value: I80F48, decimals: u8) -> I80F48 {
     match decimals {

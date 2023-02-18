@@ -29,7 +29,7 @@ use crate::{
         UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
-    quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
+    dex, quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
     CreateOracleProductsArgs, CreatePerpetualMarketArgs, CreatePoolArgs, FeeTierArgs,
     LiquidityMiningArgs, NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus,
 };
@@ -482,7 +482,7 @@ pub fn init_spot_open_orders(
         open_orders: *open_orders,
         authority: *authority,
         payer: *payer,
-        dex_program: anchor_spl::dex::ID,
+        dex_program: dex::ID,
         system_program: system_program::ID,
         rent: Rent::id(),
     };
@@ -550,7 +550,7 @@ pub fn close_spot_open_orders(
         dex_market: *dex_market,
         open_orders: *open_orders,
         authority: *authority,
-        dex_program: anchor_spl::dex::ID,
+        dex_program: dex::ID,
     };
     let ix_data = crate::instruction::CloseSpotOpenOrders {};
     Instruction {
@@ -943,7 +943,7 @@ pub fn new_spot_order(
             vault_signer: *dex_vault_signer,
             rent: Rent::id(),
             token_program: token::ID,
-            dex_program: anchor_spl::dex::ID,
+            dex_program: dex::ID,
         },
     };
     let ix_data = crate::instruction::NewSpotOrder { _args: args };
@@ -998,7 +998,7 @@ pub fn cancel_spot_order(
             pc_vault: *pc_vault,
             vault_signer: *dex_vault_signer,
             token_program: token::ID,
-            dex_program: anchor_spl::dex::ID,
+            dex_program: dex::ID,
         },
     };
     let ix_data = crate::instruction::CancelSpotOrder { _args: args };
@@ -1046,7 +1046,7 @@ pub fn settle_spot_funds(
             pc_vault: *pc_vault,
             vault_signer: *dex_vault_signer,
             token_program: token::ID,
-            dex_program: anchor_spl::dex::ID,
+            dex_program: dex::ID,
         },
     };
     let ix_data = crate::instruction::SettleSpotFunds {};

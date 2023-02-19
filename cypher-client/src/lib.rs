@@ -11,7 +11,7 @@ use anchor_spl::dex::serum_dex::matching::Side as DexSide;
 use bonfida_utils::fp_math::fp32_mul;
 use constants::{INV_ONE_HUNDRED_FIXED, QUOTE_TOKEN_IDX};
 use fixed::types::I80F48;
-use std::mem::take;
+use std::{mem::take, ops::Mul};
 use utils::adjust_decimals;
 
 use crate::constants::TOKENS_MAX_CNT;
@@ -1048,11 +1048,11 @@ impl DerivativePosition {
 impl Pool {
     /// the pool's utilization rate
     pub fn utilization_rate(&self) -> I80F48 {
-        let borrows = self.borrows();
+        let borrows = self.total_borrows();
         if borrows == I80F48::ZERO {
             I80F48::ZERO
         } else {
-            borrows.saturating_div(self.deposits())
+            borrows.saturating_div(self.total_deposits())
         }
     }
 
@@ -1082,9 +1082,19 @@ impl Pool {
         I80F48::from_bits(self.deposits)
     }
 
+    /// the deposits of this pool
+    pub fn total_deposits(&self) -> I80F48 {
+        self.deposits().mul(self.deposit_index())
+    }
+
     /// the borrows of this pool
     pub fn borrows(&self) -> I80F48 {
         I80F48::from_bits(self.borrows)
+    }
+
+    /// the deposits of this pool
+    pub fn total_borrows(&self) -> I80F48 {
+        self.borrows().mul(self.borrow_index())
     }
 
     /// the deposit index of this pool

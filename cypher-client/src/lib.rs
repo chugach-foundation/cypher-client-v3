@@ -1122,6 +1122,28 @@ impl Pool {
             .saturating_mul(self.utilization_rate())
             .saturating_div(I80F48::ONE)
     }
+
+    /// accumulated borrow interest payments
+    pub fn accum_borrow_interest_payment(&self) -> I80F48 {
+        I80F48::from_bits(self.accum_borrow_interest_payment)
+    }
+
+    /// accumulated deposit interest payments
+    pub fn accum_deposit_interest_payment(&self) -> I80F48 {
+        I80F48::from_bits(self.accum_deposit_interest_payment)
+    }
+}
+
+impl PoolNode {
+    /// accumulated borrows
+    pub fn accum_borrows(&self) -> I80F48 {
+        I80F48::from_bits(self.accum_borrows)
+    }
+
+    /// accumulated repays
+    pub fn accum_repays(&self) -> I80F48 {
+        I80F48::from_bits(self.accum_borrows)
+    }
 }
 
 impl FuturesMarket {

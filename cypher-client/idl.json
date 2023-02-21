@@ -1943,6 +1943,70 @@
       ]
     },
     {
+      "name": "setPoolParams",
+      "accounts": [
+        {
+          "name": "cache",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "initAssetWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "maintAssetWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "initLiabWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "maintLiabWeight",
+          "type": {
+            "option": "u8"
+          }
+        },
+        {
+          "name": "optimalApr",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "optimalUtil",
+          "type": {
+            "option": "u16"
+          }
+        },
+        {
+          "name": "maxApr",
+          "type": {
+            "option": "u16"
+          }
+        }
+      ]
+    },
+    {
       "name": "setOracleProducts",
       "accounts": [
         {

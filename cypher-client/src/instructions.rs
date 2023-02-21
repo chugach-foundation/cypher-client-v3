@@ -22,11 +22,11 @@ use crate::{
         SetFuturesMarketAuthority, SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams,
         SetFuturesMarketStatus, SetOracleProducts, SetOracleStubPrice, SetPerpetualMarketAuthority,
         SetPerpetualMarketLiquidityMiningInfo, SetPerpetualMarketParams, SetPerpetualMarketStatus,
-        SetPoolAuthority, SetPoolDexMarket, SetPoolNodeAuthority, SetPoolNodeStatus, SetPoolStatus,
-        SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
-        SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex, SweepMarketFees,
-        SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate,
-        UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
+        SetPoolAuthority, SetPoolDexMarket, SetPoolNodeAuthority, SetPoolNodeStatus, SetPoolParams,
+        SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
+        SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
+        SweepMarketFees, SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin,
+        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     dex, quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
@@ -1876,6 +1876,39 @@ pub fn set_pool_dex_market(
         authority: *authority,
     };
     let ix_data = crate::instruction::SetPoolDexMarket {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn set_pool_params(
+    cache: &Pubkey,
+    pool: &Pubkey,
+    authority: &Pubkey,
+    init_asset_weight: Option<u8>,
+    maint_asset_weight: Option<u8>,
+    init_liab_weight: Option<u8>,
+    maint_liab_weight: Option<u8>,
+    optimal_apr: Option<u16>,
+    optimal_util: Option<u16>,
+    max_apr: Option<u16>,
+) -> Instruction {
+    let accounts = SetPoolParams {
+        cache: *cache,
+        pool: *pool,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::SetPoolParams {
+        _init_asset_weight: init_asset_weight,
+        _maint_asset_weight: maint_asset_weight,
+        _init_liab_weight: init_liab_weight,
+        _maint_liab_weight: maint_liab_weight,
+        _optimal_apr: optimal_apr,
+        _optimal_util: optimal_util,
+        _max_apr: max_apr,
+    };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

@@ -33,6 +33,7 @@ impl TransactionBuilder {
         self.ixs.clear();
     }
 
+    #[inline(always)]
     pub fn build(
         &self,
         recent_blockhash: Hash,

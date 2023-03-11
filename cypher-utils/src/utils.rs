@@ -69,7 +69,7 @@ pub const KEYPAIR_LENGTH: usize = 64;
 ///
 /// The file should have the following format, and in total should have [`KEYPAIR_LENGTH`] bytes.
 ///
-/// \[123, 34, 78, 0, 1, 3, 45 (...)\]
+/// \[123,34,78,0,1,3,45(...)\]
 #[inline(always)]
 pub fn load_keypair<P>(path: P) -> Result<Keypair, KeypairError>
 where
@@ -91,11 +91,24 @@ where
         return Err(KeypairError::FileRead(e));
     };
 
-    let keypair_bytes: Vec<u8> = file_string
+    let mut replace = file_string
         .replace('[', "")
         .replace(']', "")
         .replace(',', " ")
+        .trim()
+        .to_string();
+
+    // remove trailing newline
+    if replace.ends_with('\n') {
+        replace.pop();
+        if replace.ends_with('\r') {
+            replace.pop();
+        }
+    }
+
+    let keypair_bytes: Vec<u8> = replace
         .split(' ')
+        .take(KEYPAIR_LENGTH)
         .map(|x| u8::from_str(x).unwrap())
         .collect();
 

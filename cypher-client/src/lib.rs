@@ -208,12 +208,19 @@ impl PartialEq for ProductsType {
             (ProductsType::Stub, ProductsType::Stub) => true,
             (ProductsType::Stub, ProductsType::Pyth) => false,
             (ProductsType::Stub, ProductsType::Switchboard) => false,
+            (ProductsType::Stub, ProductsType::Chainlink) => false,
             (ProductsType::Pyth, ProductsType::Pyth) => true,
             (ProductsType::Pyth, ProductsType::Stub) => false,
             (ProductsType::Pyth, ProductsType::Switchboard) => false,
+            (ProductsType::Pyth, ProductsType::Chainlink) => false,
             (ProductsType::Switchboard, ProductsType::Switchboard) => true,
             (ProductsType::Switchboard, ProductsType::Stub) => false,
             (ProductsType::Switchboard, ProductsType::Pyth) => false,
+            (ProductsType::Switchboard, ProductsType::Chainlink) => false,
+            (ProductsType::Chainlink, ProductsType::Switchboard) => false,
+            (ProductsType::Chainlink, ProductsType::Chainlink) => true,
+            (ProductsType::Chainlink, ProductsType::Stub) => false,
+            (ProductsType::Chainlink, ProductsType::Pyth) => false,
         }
     }
 }
@@ -583,8 +590,10 @@ impl CypherAccount {
     /// gets the c-ratio components for this account
     pub fn get_margin_c_ratio_components(&self) -> Vec<(I80F48, I80F48)> {
         self.sub_account_caches
+            .iter()
+            .filter(|c| c.sub_account != Default::default())
             .map(|c| (c.assets_value(), c.liabilities_value()))
-            .to_vec()
+            .collect()
     }
 }
 

@@ -8,30 +8,32 @@ use anchor_spl::token;
 
 use crate::{
     accounts::{
-        CacheOraclePrices, CancelFuturesOrder, CancelPerpOrder, CancelSpotOrder,
-        CancelSpotOrderDex, ClaimIdoProceeds, CloseAccount, CloseCacheAccount, CloseClearing,
-        CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket, ClosePool, ClosePoolNode,
-        CloseSpotOpenOrders, CloseSubAccount, ConsumeFuturesEvents, ConsumePerpEvents,
-        CreateAccount, CreateFuturesMarket, CreateOracleProducts, CreateOracleStub,
-        CreateOrdersAccount, CreatePerpMarket, CreatePool, CreatePoolNode, CreatePrivateClearing,
-        CreatePublicClearing, CreateSubAccount, CreateWhitelist, CreateWhitelistedAccount,
-        DepositDeliverable, DepositFunds, InitCacheAccount, InitSpotOpenOrders,
-        LiquidateFuturesPosition, LiquidatePerpPosition, LiquidateSpotPosition, NewFuturesOrder,
-        NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
-        SetCacheAuthority, SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers,
-        SetFuturesMarketAuthority, SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams,
-        SetFuturesMarketStatus, SetOracleProducts, SetOracleStubPrice, SetPerpetualMarketAuthority,
+        CacheOraclePrices, CancelFuturesOrder, CancelFuturesOrders, CancelPerpOrder,
+        CancelPerpOrders, CancelSpotOrder, CancelSpotOrderDex, ClaimIdoProceeds, CloseAccount,
+        CloseCacheAccount, CloseClearing, CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket,
+        ClosePool, ClosePoolNode, CloseSpotOpenOrders, CloseSubAccount, ConsumeFuturesEvents,
+        ConsumePerpEvents, CreateAccount, CreateFuturesMarket, CreateOracleProducts,
+        CreateOracleStub, CreateOrdersAccount, CreatePerpMarket, CreatePool, CreatePoolNode,
+        CreatePrivateClearing, CreatePublicClearing, CreateSubAccount, CreateWhitelist,
+        CreateWhitelistedAccount, DepositDeliverable, DepositFunds, InitCacheAccount,
+        InitSpotOpenOrders, LiquidateFuturesPosition, LiquidatePerpPosition, LiquidateSpotPosition,
+        MultipleNewFuturesOrders, MultipleNewPerpOrders, NewFuturesOrder, NewPerpOrder,
+        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetCacheAuthority,
+        SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
+        SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams, SetFuturesMarketStatus,
+        SetOracleProducts, SetOracleProductsV2, SetOracleStubPrice, SetPerpetualMarketAuthority,
         SetPerpetualMarketLiquidityMiningInfo, SetPerpetualMarketParams, SetPerpetualMarketStatus,
         SetPoolAuthority, SetPoolDexMarket, SetPoolNodeAuthority, SetPoolNodeStatus, SetPoolParams,
         SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
         SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
         SweepMarketFees, SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin,
-        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, WithdrawFunds,
+        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, UpgradeOracleProducts,
+        WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     dex, quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
     CreateOracleProductsArgs, CreatePerpetualMarketArgs, CreatePoolArgs, FeeTierArgs,
-    LiquidityMiningArgs, NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus,
+    LiquidityMiningArgs, NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus, ProductsType,
 };
 
 pub fn create_public_clearing(
@@ -439,6 +441,83 @@ pub fn set_oracle_products(
     }
 }
 
+pub fn set_oracle_products_v2(
+    clearing: &Pubkey,
+    oracle_products: &Pubkey,
+    authority: &Pubkey,
+    feed_accounts: &[Pubkey],
+    products_type: ProductsType,
+    time_to_live: u16,
+    max_confidence_intervals: Vec<f64>,
+    weights: Vec<u16>,
+    pyth_weight: Option<u16>,
+    switchboard_weight: Option<u16>,
+    chainlink_weight: Option<u16>,
+) -> Instruction {
+    let mut accounts = SetOracleProductsV2 {
+        clearing: *clearing,
+        oracle_products: *oracle_products,
+        authority: *authority,
+    }
+    .to_account_metas(Some(false));
+
+    accounts.extend(
+        feed_accounts
+            .iter()
+            .map(|p| AccountMeta::new_readonly(*p, false))
+            .collect::<Vec<AccountMeta>>(),
+    );
+
+    let ix_data = crate::instruction::SetOracleProductsV2 {
+        _products_type: products_type,
+        _max_confidence_intervals: max_confidence_intervals,
+        _weights: weights,
+        _time_to_live: time_to_live,
+        _pyth_weight: pyth_weight,
+        _switchboard_weight: switchboard_weight,
+        _chainlink_weight: chainlink_weight,
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts,
+        data: ix_data.data(),
+    }
+}
+
+pub fn upgrade_oracle_products(
+    cache_account: &Pubkey,
+    price_history: &Pubkey,
+    oracle_products: &Pubkey,
+    payer: &Pubkey,
+    authority: &Pubkey,
+    twap_longer_time_horizon: u64,
+    twap_shorter_time_horizon: u64,
+    twap_price_collection_tick: u64,
+    bands_duration: u64,
+    bands_threshold: u16,
+) -> Instruction {
+    let accounts = UpgradeOracleProducts {
+        cache: *cache_account,
+        price_history: *price_history,
+        oracle_products: *oracle_products,
+        payer: *payer,
+        authority: *authority,
+        system_program: system_program::ID,
+    };
+    let ix_data = crate::instruction::UpgradeOracleProducts {
+        _twap_longer_time_horizon: twap_longer_time_horizon,
+        _twap_shorter_time_horizon: twap_shorter_time_horizon,
+        _twap_price_collection_tick: twap_price_collection_tick,
+        _bands_duration: bands_duration,
+        _bands_threshold: bands_threshold,
+    };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
 pub fn create_orders_account(
     master_account: &Pubkey,
     market: &Pubkey,
@@ -705,6 +784,45 @@ pub fn new_futures_order(
     }
 }
 
+pub fn multiple_new_futures_orders(
+    clearing: &Pubkey,
+    cache_account: &Pubkey,
+    master_account: &Pubkey,
+    sub_account: &Pubkey,
+    market: &Pubkey,
+    open_orders: &Pubkey,
+    price_history: &Pubkey,
+    orderbook: &Pubkey,
+    event_queue: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    quote_pool_node: &Pubkey,
+    authority: &Pubkey,
+    args: Vec<NewDerivativeOrderArgs>,
+) -> Instruction {
+    let accounts = MultipleNewFuturesOrders {
+        clearing: *clearing,
+        cache_account: *cache_account,
+        master_account: *master_account,
+        sub_account: *sub_account,
+        market: *market,
+        open_orders: *open_orders,
+        price_history: *price_history,
+        orderbook: *orderbook,
+        event_queue: *event_queue,
+        bids: *bids,
+        asks: *asks,
+        quote_pool_node: *quote_pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::MultipleNewFuturesOrders { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
 pub fn cancel_futures_order(
     clearing: &Pubkey,
     cache_account: &Pubkey,
@@ -735,6 +853,43 @@ pub fn cancel_futures_order(
         authority: *authority,
     };
     let ix_data = crate::instruction::CancelFuturesOrder { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn cancel_futures_orders(
+    clearing: &Pubkey,
+    cache_account: &Pubkey,
+    master_account: &Pubkey,
+    sub_account: &Pubkey,
+    market: &Pubkey,
+    open_orders: &Pubkey,
+    orderbook: &Pubkey,
+    event_queue: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    quote_pool_node: &Pubkey,
+    authority: &Pubkey,
+    args: Vec<CancelOrderArgs>,
+) -> Instruction {
+    let accounts = CancelFuturesOrders {
+        clearing: *clearing,
+        cache_account: *cache_account,
+        master_account: *master_account,
+        sub_account: *sub_account,
+        market: *market,
+        open_orders: *open_orders,
+        orderbook: *orderbook,
+        event_queue: *event_queue,
+        bids: *bids,
+        asks: *asks,
+        quote_pool_node: *quote_pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::CancelFuturesOrders { _args: args };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),
@@ -807,6 +962,43 @@ pub fn new_perp_order(
     }
 }
 
+pub fn multiple_new_perp_orders(
+    clearing: &Pubkey,
+    cache_account: &Pubkey,
+    master_account: &Pubkey,
+    sub_account: &Pubkey,
+    market: &Pubkey,
+    open_orders: &Pubkey,
+    orderbook: &Pubkey,
+    event_queue: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    quote_pool_node: &Pubkey,
+    authority: &Pubkey,
+    args: Vec<NewDerivativeOrderArgs>,
+) -> Instruction {
+    let accounts = MultipleNewPerpOrders {
+        clearing: *clearing,
+        cache_account: *cache_account,
+        master_account: *master_account,
+        sub_account: *sub_account,
+        market: *market,
+        open_orders: *open_orders,
+        orderbook: *orderbook,
+        event_queue: *event_queue,
+        bids: *bids,
+        asks: *asks,
+        quote_pool_node: *quote_pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::MultipleNewPerpOrders { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
 pub fn cancel_perp_order(
     clearing: &Pubkey,
     cache_account: &Pubkey,
@@ -837,6 +1029,43 @@ pub fn cancel_perp_order(
         authority: *authority,
     };
     let ix_data = crate::instruction::CancelPerpOrder { _args: args };
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(Some(false)),
+        data: ix_data.data(),
+    }
+}
+
+pub fn cancel_perp_orders(
+    clearing: &Pubkey,
+    cache_account: &Pubkey,
+    master_account: &Pubkey,
+    sub_account: &Pubkey,
+    market: &Pubkey,
+    open_orders: &Pubkey,
+    orderbook: &Pubkey,
+    event_queue: &Pubkey,
+    bids: &Pubkey,
+    asks: &Pubkey,
+    quote_pool_node: &Pubkey,
+    authority: &Pubkey,
+    args: Vec<CancelOrderArgs>,
+) -> Instruction {
+    let accounts = CancelPerpOrders {
+        clearing: *clearing,
+        cache_account: *cache_account,
+        master_account: *master_account,
+        sub_account: *sub_account,
+        market: *market,
+        open_orders: *open_orders,
+        orderbook: *orderbook,
+        event_queue: *event_queue,
+        bids: *bids,
+        asks: *asks,
+        quote_pool_node: *quote_pool_node,
+        authority: *authority,
+    };
+    let ix_data = crate::instruction::CancelPerpOrders { _args: args };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

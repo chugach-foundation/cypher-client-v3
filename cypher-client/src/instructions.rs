@@ -612,6 +612,62 @@ pub fn cache_oracle_prices(
     })
 }
 
+/// This instruction should only receive a futures market pubkey.
+/// It is the same instruction as in `cache_oracle_prices` but adapted for upgraded oracles.
+/// in this specific case we expect a bunch more accounts, i.e
+/// 0..n - switchboard feeds
+/// n..2n - pyth price accounts
+/// 2n+1 - chainlink program
+/// 2n+1..3n+1 - chainlink
+/// 3n+2 - price history
+/// 3n+3 - futures market (opt)
+pub fn cache_oracle_prices_v1(
+    cache_account: &Pubkey,
+    oracle_products: &Pubkey,
+    price_history: &Pubkey,
+    switchboard_aggregator_accounts: &[Pubkey],
+    pyth_price_accounts: &[Pubkey],
+    chainlink_program_id: &Pubkey,
+    chainlink_store_accounts: &[Pubkey],
+    cache_index: u64,
+    futures_market: &Option<Pubkey>,
+) -> Result<Instruction, ProgramError> {
+    let mut accounts = CacheOraclePrices {
+        cache_account: *cache_account,
+        oracle_products: *oracle_products,
+    }
+    .to_account_metas(Some(false));
+
+    accounts.extend(
+        switchboard_aggregator_accounts
+            .iter()
+            .map(|p| AccountMeta::new_readonly(*p, false)),
+    );
+    accounts.extend(
+        pyth_price_accounts
+            .iter()
+            .map(|p| AccountMeta::new_readonly(*p, false)),
+    );
+    accounts.extend(AccountMeta::new_readonly(*chainlink_program_id, false));
+    accounts.extend(
+        chainlink_store_accounts
+            .iter()
+            .map(|p| AccountMeta::new_readonly(*p, false)),
+    );
+    accounts.extend(AccountMeta::new(*price_history, false));
+    if futures_market.is_some() {
+        accounts.push(AccountMeta::new_readonly(futures_market.unwrap(), false));
+    }
+    let ix_data = crate::instruction::CacheOraclePrices {
+        _cache_index: cache_index,
+    };
+    Ok(Instruction {
+        program_id: crate::id(),
+        accounts,
+        data: ix_data.data(),
+    })
+}
+
 pub fn close_spot_open_orders(
     master_account: &Pubkey,
     sub_account: &Pubkey,

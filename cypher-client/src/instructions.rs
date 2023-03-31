@@ -631,7 +631,7 @@ pub fn cache_oracle_prices_v1(
     chainlink_store_accounts: &[Pubkey],
     cache_index: u64,
     futures_market: &Option<Pubkey>,
-) -> Result<Instruction, ProgramError> {
+) -> Instruction {
     let mut accounts = CacheOraclePrices {
         cache_account: *cache_account,
         oracle_products: *oracle_products,
@@ -648,24 +648,24 @@ pub fn cache_oracle_prices_v1(
             .iter()
             .map(|p| AccountMeta::new_readonly(*p, false)),
     );
-    accounts.extend(AccountMeta::new_readonly(*chainlink_program_id, false));
+    accounts.push(AccountMeta::new_readonly(*chainlink_program_id, false));
     accounts.extend(
         chainlink_store_accounts
             .iter()
             .map(|p| AccountMeta::new_readonly(*p, false)),
     );
-    accounts.extend(AccountMeta::new(*price_history, false));
+    accounts.push(AccountMeta::new(*price_history, false));
     if futures_market.is_some() {
         accounts.push(AccountMeta::new_readonly(futures_market.unwrap(), false));
     }
     let ix_data = crate::instruction::CacheOraclePrices {
         _cache_index: cache_index,
     };
-    Ok(Instruction {
+    Instruction {
         program_id: crate::id(),
         accounts,
         data: ix_data.data(),
-    })
+    }
 }
 
 pub fn close_spot_open_orders(

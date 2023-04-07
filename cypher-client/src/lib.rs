@@ -50,7 +50,7 @@ anchor_gen::generate_cpi_interface!(
 #[cfg(feature = "mainnet-beta")]
 declare_id!("CYPH3o83JX6jY6NkbproSpdmQ5VWJtxjfJ5P8veyYVu3");
 #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("E2hQJAedG6bX2w3rbPQ5XrBnPvC7u3mAorKLvU6XPxwe");
+declare_id!("9ZoxkdieCwUWu57SyNkd4PR2fb7azpNiefeZjwDbzBQo");
 
 pub mod quote_mint {
     use anchor_lang::declare_id;

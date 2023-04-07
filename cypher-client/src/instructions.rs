@@ -648,7 +648,9 @@ pub fn cache_oracle_prices_v1(
             .iter()
             .map(|p| AccountMeta::new_readonly(*p, false)),
     );
-    accounts.push(AccountMeta::new_readonly(*chainlink_program_id, false));
+    if !chainlink_store_accounts.is_empty() {
+        accounts.push(AccountMeta::new_readonly(*chainlink_program_id, false));
+    }
     accounts.extend(
         chainlink_store_accounts
             .iter()

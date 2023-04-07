@@ -448,11 +448,11 @@ pub fn set_oracle_products_v2(
     feed_accounts: &[Pubkey],
     products_type: ProductsType,
     time_to_live: u16,
-    max_confidence_intervals: Vec<f64>,
-    weights: Vec<u16>,
-    pyth_weight: Option<u16>,
-    switchboard_weight: Option<u16>,
-    chainlink_weight: Option<u16>,
+    max_confidence_intervals: &[f64],
+    weights: &[u16],
+    pyth_weight: &Option<u16>,
+    switchboard_weight: &Option<u16>,
+    chainlink_weight: &Option<u16>,
 ) -> Instruction {
     let mut accounts = SetOracleProductsV2 {
         clearing: *clearing,
@@ -470,12 +470,12 @@ pub fn set_oracle_products_v2(
 
     let ix_data = crate::instruction::SetOracleProductsV2 {
         _products_type: products_type,
-        _max_confidence_intervals: max_confidence_intervals,
-        _weights: weights,
+        _max_confidence_intervals: max_confidence_intervals.to_vec(),
+        _weights: weights.to_vec(),
         _time_to_live: time_to_live,
-        _pyth_weight: pyth_weight,
-        _switchboard_weight: switchboard_weight,
-        _chainlink_weight: chainlink_weight,
+        _pyth_weight: pyth_weight.clone(),
+        _switchboard_weight: switchboard_weight.clone(),
+        _chainlink_weight: chainlink_weight.clone(),
     };
     Instruction {
         program_id: crate::id(),

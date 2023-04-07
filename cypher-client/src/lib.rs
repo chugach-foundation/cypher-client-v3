@@ -97,7 +97,7 @@ pub mod cache_account {
     #[cfg(feature = "mainnet-beta")]
     declare_id!("6x5U4c41tfUYGEbTXofFiHcfyx3rqJZsT4emrLisNGGL");
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("DV1umVB5KzBkPuav7JbDNNKUzaDk9v2zAUNudR3kKRmZ");
+    declare_id!("FRTMAXfFbvxvRfWB8Vju6XzASbQZuNPmFRq1u9XFre4z");
 }
 
 pub mod wrapped_sol {

@@ -453,6 +453,7 @@ pub fn set_oracle_products_v2(
     pyth_weight: &Option<u16>,
     switchboard_weight: &Option<u16>,
     chainlink_weight: &Option<u16>,
+    chainlink_program_id: Option<Pubkey>,
 ) -> Instruction {
     let mut accounts = SetOracleProductsV2 {
         clearing: *clearing,
@@ -460,6 +461,10 @@ pub fn set_oracle_products_v2(
         authority: *authority,
     }
     .to_account_metas(Some(false));
+
+    if let Some(chainlink_program_id) = chainlink_program_id {
+        accounts.push(AccountMeta::new_readonly(chainlink_program_id, false));
+    }
 
     accounts.extend(
         feed_accounts

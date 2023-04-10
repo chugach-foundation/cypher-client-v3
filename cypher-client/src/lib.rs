@@ -786,6 +786,19 @@ impl CypherSubAccount {
                         .unwrap();
                     assets_value += derivative_value;
                 }
+                // we are going to take derivative coins locked and will price them at the oracle price
+                // regardless of whatever price the limit ask orders are actually placed at
+                // we do this because these limit asks are actually considered a liability
+                // if they weren't, we would run into a risk of a user spamming limit asks without them affecting the c-ratio
+                let derivative_coin_locked = position.derivative.open_orders_cache.coin_locked();
+                if derivative_coin_locked != 0 {
+                    let coin_locked_value =
+                        adjust_decimals(I80F48::from(derivative_coin_locked), decimals)
+                            .checked_mul(derivative_price)
+                            .and_then(|n| n.checked_mul(derivative_asset_weight))
+                            .unwrap();
+                    assets_value += coin_locked_value;
+                }
                 cum_pc_total += position.derivative.open_orders_cache.pc_total;
             }
         }
@@ -1051,6 +1064,12 @@ impl DerivativePosition {
         // locked coins are unmatched from ask orders, so they should be
         base_position += I80F48::from(self.open_orders_cache.coin_total);
         base_position
+    }
+}
+
+impl OpenOrdersCache {
+    pub fn coin_locked(&self) -> u64 {
+        self.coin_total - self.coin_free
     }
 }
 

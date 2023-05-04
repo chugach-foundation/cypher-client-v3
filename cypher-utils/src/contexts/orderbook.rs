@@ -162,7 +162,6 @@ impl OrderBook {
 
         if side == Side::Ask {
             for bid in self.bids.iter() {
-                println!("Price: {}", bid.price);
                 impact_price = bid.price;
                 cumulative_size += bid.base_quantity;
                 if cumulative_size >= size {
@@ -171,7 +170,6 @@ impl OrderBook {
             }
         } else {
             for ask in self.asks.iter() {
-                println!("Price: {}", ask.price);
                 impact_price = ask.price;
                 cumulative_size += ask.base_quantity;
                 if cumulative_size >= size {

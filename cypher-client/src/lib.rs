@@ -105,6 +105,11 @@ pub mod wrapped_sol {
     declare_id!("So11111111111111111111111111111111111111112");
 }
 
+pub mod cypher_token {
+    use anchor_lang::declare_id;
+    declare_id!("CYPHK4sZe7A4tdgTgLSotkkEzadtxqKu5JjuvaQRkYah");
+}
+
 impl From<DexSide> for Side {
     fn from(side: DexSide) -> Self {
         match side {

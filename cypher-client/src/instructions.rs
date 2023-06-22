@@ -785,6 +785,7 @@ pub fn withdraw_funds(
     token_mint: &Pubkey,
     authority: &Pubkey,
     amount: u64,
+    zero: Option<bool>,
 ) -> Instruction {
     let accounts = WithdrawFunds {
         clearing: *clearing,
@@ -800,7 +801,10 @@ pub fn withdraw_funds(
         authority: *authority,
         token_program: token::ID,
     };
-    let ix_data = crate::instruction::WithdrawFunds { _amount: amount };
+    let ix_data = crate::instruction::WithdrawFunds {
+        _amount: amount,
+        _zero: zero,
+    };
     Instruction {
         program_id: crate::id(),
         accounts: accounts.to_account_metas(Some(false)),

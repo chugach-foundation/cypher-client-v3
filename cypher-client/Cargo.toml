@@ -5,7 +5,7 @@ edition = "2021"
 keywords = ["solana", "anchor", "cypher", "cpi"]
 license = "Apache-2.0"
 name = "cypher-client"
-version = "3.0.0"
+version = "3.0.7"
 
 [features]
 cpi = [ "no-entrypoint" ]

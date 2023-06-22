@@ -540,6 +540,7 @@ impl UserContext {
             token_mint,
             &self.authority,
             amount,
+            None,
         ));
 
         // If it a Wrapped SOL withdrawal we can close the account after it has occurred

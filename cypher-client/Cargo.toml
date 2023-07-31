@@ -5,7 +5,7 @@ edition = "2021"
 keywords = ["solana", "anchor", "cypher", "cpi"]
 license = "Apache-2.0"
 name = "cypher-client"
-version = "3.0.7"
+version = "3.0.8"
 
 [features]
 cpi = [ "no-entrypoint" ]
@@ -16,13 +16,13 @@ devnet = [ "anchor-spl/devnet" ]
 mainnet-beta = [ "cpi" ]
 
 [dependencies]
-agnostic-orderbook = { git = "https://github.com/chugach-foundation/agnostic-orderbook.git" }
-anchor-gen = "0.3.0"
-anchor-lang = "0.26"
-anchor-spl = { version = "0.26.0", features = [ "token", "associated_token", "dex" ] }
+agnostic-orderbook = { git = "https://github.com/chugach-foundation/agnostic-orderbook.git", version = "1.0.1" }
+anchor-gen = { git = "https://github.com/chugach-foundation/anchor-gen.git", version = "0.3.3" }
+anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", version = "0.28.0" }
+anchor-spl = { git = "https://github.com/coral-xyz/anchor.git", version = "0.28.0", features = [ "token", "associated_token", "dex" ] }
 arrayref = "0.3.6"
-bonfida-utils = "0.2.14"
-bytemuck = "1.4.0"
+bonfida-utils = { git = "https://github.com/chugach-foundation/bonfida-utils.git", version = "0.4.2" }
+bytemuck = "1.13.1"
 fixed = { version = ">=1.11.0, <1.12.0", features = ["serde"] }
 num_enum = "0.5.0"
 safe-transmute = "0.11.0"

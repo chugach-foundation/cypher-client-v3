@@ -16,6 +16,6 @@ devnet = [ "anchor-spl/devnet" ]
 mainnet-beta = [ "cpi" ]
 
 [dependencies]
-anchor-gen = "0.3.0"
-anchor-lang = "0.26"
-anchor-spl = { version = "0.26.0", features = [ "token", "associated_token", "dex" ] }
+anchor-gen = { git = "https://github.com/chugach-foundation/anchor-gen.git", version = "0.3.3" }
+anchor-lang = { git = "https://github.com/coral-xyz/anchor.git", version = "0.28.0" }
+anchor-spl = { git = "https://github.com/coral-xyz/anchor.git", version = "0.28.0", features = [ "token", "associated_token", "dex" ] }

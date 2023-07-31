@@ -8,7 +8,7 @@ pub mod utils;
 use agnostic_orderbook::state::Side as AobSide;
 use anchor_lang::prelude::*;
 use anchor_spl::dex::serum_dex::matching::Side as DexSide;
-use bonfida_utils::fp_math::fp32_mul;
+use bonfida_utils::fp_math::fp32_mul_floor;
 use constants::{INV_ONE_HUNDRED_FIXED, QUOTE_TOKEN_IDX};
 use fixed::types::I80F48;
 use std::{mem::take, ops::Mul};
@@ -1235,7 +1235,7 @@ impl Market for PerpetualMarket {
     }
 
     fn get_quote_from_base(&self, base_amount: u64, scaled_price_fp32: u64) -> Option<u64> {
-        fp32_mul(base_amount, scaled_price_fp32)
+        fp32_mul_floor(base_amount, scaled_price_fp32)
             .and_then(|n| (n as u128).checked_mul(self.inner.quote_multiplier as u128))
             .and_then(|n| n.checked_div(self.inner.base_multiplier as u128))
             .and_then(|n| n.try_into().ok())
@@ -1267,7 +1267,7 @@ impl Market for FuturesMarket {
     }
 
     fn get_quote_from_base(&self, base_amount: u64, scaled_price_fp32: u64) -> Option<u64> {
-        fp32_mul(base_amount, scaled_price_fp32)
+        fp32_mul_floor(base_amount, scaled_price_fp32)
             .and_then(|n| (n as u128).checked_mul(self.inner.quote_multiplier as u128))
             .and_then(|n| n.checked_div(self.inner.base_multiplier as u128))
             .and_then(|n| n.try_into().ok())

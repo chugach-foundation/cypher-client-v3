@@ -1,5 +1,6 @@
-use anchor_client::solana_sdk::instruction::Instruction;
-use anchor_lang::{prelude::*, system_program, InstructionData};
+use anchor_lang::{
+    prelude::*, solana_program::instruction::Instruction, system_program, InstructionData,
+};
 use anchor_spl::token;
 
 anchor_gen::generate_cpi_interface!(idl_path = "idl.json",);

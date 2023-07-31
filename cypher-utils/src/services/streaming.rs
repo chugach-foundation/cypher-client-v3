@@ -6,7 +6,7 @@ use {
     },
     dashmap::DashMap,
     futures::StreamExt,
-    log::{info, warn},
+    log::{debug, info, warn},
     solana_account_decoder::UiAccountEncoding,
     solana_client::{
         client_error::ClientError,
@@ -80,7 +80,7 @@ impl StreamingAccountInfoService {
                 for handler in self.subscriptions_map.iter() {
                     match handler.stop().await {
                         Ok(_) => {
-                            info!("Successfully sent shutdown signal to handler: {}", handler.account);
+                            debug!("Successfully sent shutdown signal to handler: {}", handler.account);
                         },
                         Err(e) => {
                             warn!(
@@ -97,7 +97,11 @@ impl StreamingAccountInfoService {
 
     /// Adds new subscriptions to the service.
     #[inline(always)]
-    pub async fn add_subscriptions(self: &Arc<Self>, new_accounts: &[Pubkey]) {
+    pub async fn add_subscriptions(
+        self: &Arc<Self>,
+        new_accounts: &[Pubkey],
+        commitment: Option<CommitmentConfig>,
+    ) {
         match self.get_account_infos(new_accounts).await {
             Ok(()) => (),
             Err(e) => {
@@ -118,7 +122,7 @@ impl StreamingAccountInfoService {
             ));
             let cloned_handler = Arc::clone(&handler);
             tokio::spawn(async move {
-                match cloned_handler.run().await {
+                match cloned_handler.run(&commitment).await {
                     Ok(_) => {
                         info!(
                             "Subscription handler for account: {} gracefully stopped.",
@@ -185,10 +189,10 @@ impl StreamingAccountInfoService {
 
     #[inline(always)]
     async fn get_account_infos(&self, accounts: &[Pubkey]) -> Result<(), ClientError> {
-        info!("Fetching {} account infos.", accounts.len());
+        debug!("Fetching {} account infos.", accounts.len());
         let res = match self
             .rpc_client
-            .get_multiple_accounts_with_commitment(accounts, CommitmentConfig::confirmed())
+            .get_multiple_accounts_with_commitment(accounts, CommitmentConfig::processed())
             .await
         {
             Ok(r) => r,
@@ -199,7 +203,7 @@ impl StreamingAccountInfoService {
         };
 
         let mut infos = res.value;
-        info!("Fetched {} account infos.", infos.len());
+        debug!("Fetched {} account infos.", infos.len());
 
         while !infos.is_empty() {
             let next = infos.pop().unwrap();
@@ -258,14 +262,22 @@ impl SubscriptionHandler {
     /// While the subscription persists, the handler will update the correspoding entry
     /// for the provided Account in it's [`AccountsCache`].
     #[inline(always)]
-    pub async fn run(self: &Arc<Self>) -> Result<(), PubsubClientError> {
+    pub async fn run(
+        self: &Arc<Self>,
+        commitment: &Option<CommitmentConfig>,
+    ) -> Result<(), PubsubClientError> {
         let mut shutdown_receiver = self.shutdown.subscribe();
+        let commitment = if let Some(c) = commitment {
+            Some(*c)
+        } else {
+            Some(CommitmentConfig::confirmed())
+        };
         let sub = match self
             .pubsub_client
             .account_subscribe(
                 &self.account,
                 Some(RpcAccountInfoConfig {
-                    commitment: Some(CommitmentConfig::confirmed()),
+                    commitment,
                     encoding: Some(UiAccountEncoding::Base64),
                     ..Default::default()
                 }),
@@ -291,7 +303,7 @@ impl SubscriptionHandler {
                                 continue;
                             }
                         };
-                        info!("Received account update for {}, updating cache.",  self.account);
+                        debug!("Received account update for {}, updating cache.",  self.account);
                         self.cache.insert(self.account, AccountState {
                             account: self.account,
                             data: account_data,

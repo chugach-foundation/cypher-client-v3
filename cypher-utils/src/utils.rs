@@ -4,6 +4,7 @@ use cypher_client::serum::parse_dex_account;
 use log::warn;
 use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use solana_client::{
+    rpc_client::SerializableTransaction,
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig, RpcSendTransactionConfig},
     rpc_filter::RpcFilterType,
 };
@@ -383,7 +384,7 @@ pub async fn send_transactions(
 #[inline(always)]
 pub async fn send_transaction(
     rpc_client: &RpcClient,
-    tx: &Transaction,
+    tx: &impl SerializableTransaction,
     confirm: bool,
 ) -> Result<Signature, ClientError> {
     let config = RpcSendTransactionConfig {

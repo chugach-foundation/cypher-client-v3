@@ -1,3 +1,5 @@
+use log::debug;
+
 use {
     dashmap::{mapref::one::Ref, DashMap},
     log::{info, warn},
@@ -86,7 +88,7 @@ impl AccountsCache {
         if maybe_state.is_some() {
             let state = maybe_state.unwrap();
             if state.slot > data.slot {
-                info!("Attempted to update key: {} with older data!", key);
+                debug!("Attempted to update key: {} with older data!", key);
                 return;
             }
         }
@@ -95,10 +97,10 @@ impl AccountsCache {
             if sub.accounts.contains(&key) {
                 match sub.sender.send(data.clone()) {
                     Ok(r) => {
-                        info!("Sent updated Account state to {} receivers.", r);
+                        debug!("Sent updated Account state to {} receivers.", r);
                     }
                     Err(_) => {
-                        warn!(
+                        debug!(
                             "Failed to send message about updated Account {}",
                             key.to_string()
                         );
@@ -108,10 +110,10 @@ impl AccountsCache {
         }
         match self.sender.send(data.clone()) {
             Ok(r) => {
-                info!("Sent updated Account state to {} receivers.", r);
+                debug!("Sent updated Account state to {} receivers.", r);
             }
             Err(_) => {
-                warn!(
+                debug!(
                     "Failed to send message about updated Account {}",
                     key.to_string()
                 );

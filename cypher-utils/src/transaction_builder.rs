@@ -1,7 +1,22 @@
+use anchor_lang::prelude::Pubkey;
 use solana_sdk::{
-    hash::Hash, instruction::Instruction, message::Message, signature::Keypair, signer::Signer,
-    transaction::Transaction,
+    address_lookup_table_account::AddressLookupTableAccount,
+    hash::Hash,
+    instruction::Instruction,
+    message::{v0, CompileError, Message, VersionedMessage},
+    signature::Keypair,
+    signer::{Signer, SignerError},
+    transaction::{Transaction, VersionedTransaction},
 };
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Signer Error: {:?}", self)]
+    SignerError(SignerError),
+    #[error("Compile Error: {:?}", self)]
+    CompileError(CompileError),
+}
 
 #[derive(Debug, Default)]
 pub struct TransactionBuilder {
@@ -49,5 +64,39 @@ impl TransactionBuilder {
             }
         }
         txn
+    }
+
+    #[inline(always)]
+    pub fn build_versioned(
+        &self,
+        recent_blockhash: Hash,
+        payer: &Keypair,
+        additional_signers: Option<&Vec<Keypair>>,
+        lookup_table_address: &Pubkey,
+        lookup_table: AddressLookupTableAccount,
+    ) -> Result<VersionedTransaction, Error> {
+        let message = match v0::Message::try_compile(
+            &payer.pubkey(),
+            &self.ixs[..],
+            &[lookup_table],
+            recent_blockhash,
+        ) {
+            Ok(m) => m,
+            Err(e) => {
+                return Err(Error::CompileError(e));
+            }
+        };
+
+        let mut all_signers = vec![payer];
+        if let Some(adsigners) = additional_signers {
+            all_signers.extend(adsigners);
+        }
+
+        match VersionedTransaction::try_new(VersionedMessage::V0(message), &[payer]) {
+            Ok(t) => Ok(t),
+            Err(e) => {
+                return Err(Error::SignerError(e));
+            }
+        }
     }
 }

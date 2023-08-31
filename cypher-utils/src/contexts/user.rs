@@ -677,12 +677,14 @@ impl UserContext {
 
         for sub_account_ctx in self.sub_account_ctxs.iter() {
             if sub_account_ctx.state.margining_type == SubAccountMargining::Cross {
-                assets_value += sub_account_ctx
+                let (av, _) = sub_account_ctx
                     .state
                     .get_assets_value(cache_ctx.state.as_ref(), mcr_type);
-                liabilities_value += sub_account_ctx
+                assets_value += av;
+                let (lv, _) = sub_account_ctx
                     .state
                     .get_liabilities_value(cache_ctx.state.as_ref(), mcr_type);
+                liabilities_value += lv;
             }
         }
 

@@ -1,4 +1,6 @@
-use anchor_lang::{AccountDeserialize, AccountSerialize, Discriminator, Owner, ZeroCopy};
+use anchor_lang::{
+    prelude::AccountMeta, AccountDeserialize, AccountSerialize, Discriminator, Owner, ZeroCopy,
+};
 use bytemuck::Pod;
 use cypher_client::serum::parse_dex_account;
 use log::warn;
@@ -20,7 +22,10 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
-use std::path::Path;
+use std::{
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use thiserror::Error;
 
 use crate::transaction_builder::TransactionBuilder;
@@ -291,6 +296,34 @@ pub async fn get_multiple_cypher_zero_copy_accounts<T: ZeroCopy + Owner>(
     Ok(states)
 }
 
+/// Gets multiple Account's state and attempts decoding them into the given Account type.
+///
+/// ### Errors
+///
+/// This function will return an error if something goes wrong with the RPC request
+/// or the given accounts have an invalid Anchor discriminator for the given type.
+#[inline(always)]
+pub async fn get_multiple_dex_accounts<T: Pod>(
+    rpc_client: &RpcClient,
+    accounts: &[Pubkey],
+) -> Result<Vec<Box<T>>, ClientError> {
+    let account_res = rpc_client.get_multiple_accounts(accounts).await;
+    let account_datas = match account_res {
+        Ok(a) => a,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    let states = account_datas
+        .iter()
+        .filter(|a| a.is_some())
+        .map(|a| Box::new(parse_dex_account::<T>(&a.as_ref().unwrap().data)))
+        .collect::<Vec<Box<T>>>();
+
+    Ok(states)
+}
+
 #[inline(always)]
 pub async fn send_transactions(
     rpc_client: &RpcClient,
@@ -303,13 +336,9 @@ pub async fn send_transactions(
     let mut txn_builder = TransactionBuilder::new();
     let mut submitted: bool = false;
     let mut signatures: Vec<Signature> = Vec::new();
-
-    if let Some((cu_limit, cu_price)) = compute_unit_info {
-        txn_builder.add(ComputeBudgetInstruction::set_compute_unit_limit(cu_limit));
-        txn_builder.add(ComputeBudgetInstruction::set_compute_unit_price(cu_price));
-    }
-
-    let blockhash = if let Some(hash) = blockhash {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    let mut latest_blockhash_ts = now.as_secs();
+    let mut latest_blockhash: Hash = if let Some(hash) = blockhash {
         hash
     } else {
         match rpc_client.get_latest_blockhash().await {
@@ -320,12 +349,46 @@ pub async fn send_transactions(
         }
     };
 
+    if let Some((cu_limit, cu_price)) = compute_unit_info {
+        txn_builder.add(ComputeBudgetInstruction::set_compute_unit_limit(cu_limit));
+        txn_builder.add(ComputeBudgetInstruction::set_compute_unit_price(cu_price));
+    }
+
     for ix in ixs {
         if !txn_builder.is_empty() {
-            let tx = txn_builder.build(blockhash, signer, None);
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+            if latest_blockhash_ts + 10 < now.as_secs() {
+                latest_blockhash = match rpc_client.get_latest_blockhash().await {
+                    Ok(h) => {
+                        latest_blockhash_ts = now.as_secs();
+                        h
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                }
+            }
+            // let's simply do the worst case math without checking for duplicate keys for now
+            let mut tx_accounts = txn_builder
+                .ixs
+                .iter()
+                .map(|a| a.accounts.clone())
+                .flatten()
+                .collect::<Vec<AccountMeta>>();
+            tx_accounts.dedup();
+            let ix_new_accouts = ix
+                .accounts
+                .iter()
+                .filter(|a| tx_accounts.contains(a))
+                .collect::<Vec<&AccountMeta>>();
+            let ix_len = ix_new_accouts.len() * 32 + ix.data.len();
+            let tx = txn_builder.build(latest_blockhash, signer, None);
+            let tx_len = tx.message_data().len();
             // we do this to attempt to pack as many ixs in a tx as possible
             // there's more efficient ways to do it but we'll do it in the future
-            if tx.message_data().len() > 1000 {
+            // 1168 bytes is the absolute maximum tx size without at least one signature
+            // since we know that this code is supposed to only have one signature, it's relatively safe we do this
+            if tx_len + ix_len > 1168 {
                 let res = send_transaction(rpc_client, &tx, confirm).await;
                 match res {
                     Ok(s) => {
@@ -345,6 +408,12 @@ pub async fn send_transactions(
                             "There was an error submitting transaction: {}",
                             e.to_string()
                         );
+                        let tx_err = e.get_transaction_error();
+                        if tx_err.is_some() {
+                            let err = tx_err.unwrap();
+                            warn!("Error: {}", err.to_string());
+                        }
+                        return Err(e);
                     }
                 }
             } else {
@@ -356,7 +425,19 @@ pub async fn send_transactions(
     }
 
     if !submitted || !txn_builder.is_empty() {
-        let tx = txn_builder.build(blockhash, signer, None);
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        if latest_blockhash_ts + 10 < now.as_secs() {
+            latest_blockhash = match rpc_client.get_latest_blockhash().await {
+                Ok(h) => {
+                    latest_blockhash_ts = now.as_secs();
+                    h
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        let tx = txn_builder.build(latest_blockhash, signer, None);
         let res = send_transaction(rpc_client, &tx, confirm).await;
         match res {
             Ok(s) => {

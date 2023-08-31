@@ -132,6 +132,40 @@ impl Default for SerumOpenOrdersContext {
     }
 }
 
+impl GenericOpenOrders for &Box<OpenOrders> {
+    fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order> {
+        let mut orders = Vec::new();
+
+        let order_ids = self.orders;
+        let client_order_ids = self.client_order_ids;
+
+        for i in 0..order_ids.len() {
+            let order_id = order_ids[i];
+            let client_order_id = client_order_ids[i];
+
+            if order_id != u128::default() {
+                let price = (order_id >> 64) as u64;
+                let side = self.slot_side(i as u8).unwrap();
+                let ob_order = get_orderbook_line(orderbook, order_id, side.into());
+
+                if let Some(ob_order) = ob_order {
+                    orders.push(Order {
+                        side: side.into(),
+                        order_id,
+                        client_order_id,
+                        price,
+                        base_quantity: ob_order.base_quantity,
+                        quote_quantity: ob_order.quote_quantity,
+                        max_ts: ob_order.max_ts,
+                    })
+                }
+            }
+        }
+
+        orders
+    }
+}
+
 impl GenericOpenOrders for SerumOpenOrdersContext {
     fn get_open_orders(&self, orderbook: &dyn GenericOrderBook) -> Vec<Order> {
         let mut orders = Vec::new();

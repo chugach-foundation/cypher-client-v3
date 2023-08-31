@@ -1176,7 +1176,7 @@ dependencies = [
 
 [[package]]
 name = "cypher-client"
-version = "3.0.8"
+version = "3.1.0"
 dependencies = [
  "agnostic-orderbook",
  "anchor-gen",
@@ -1193,7 +1193,7 @@ dependencies = [
 
 [[package]]
 name = "cypher-utils"
-version = "3.0.8"
+version = "3.1.0"
 dependencies = [
  "agnostic-orderbook",
  "anchor-lang",

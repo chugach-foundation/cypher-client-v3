@@ -647,10 +647,34 @@ impl CypherSubAccount {
         })
     }
 
-    /// gets the derivative position at the given index
+    /// gets the derivative positions
+    pub fn get_spot_positions(&self) -> Vec<SpotPosition> {
+        self.positions
+            .iter()
+            .filter(|p| p.spot.token_mint != Pubkey::default())
+            .map(|p| p.spot)
+            .collect()
+    }
+
+    /// gets the spot position at the given index
     pub fn get_spot_position(&self, position_idx: usize) -> &SpotPosition {
         assert!(position_idx < TOKENS_MAX_CNT);
         &self.positions[position_idx].spot
+    }
+
+    /// gets the spot position at the given index
+    pub fn get_spot_position_mut(&mut self, position_idx: usize) -> &mut SpotPosition {
+        assert!(position_idx < TOKENS_MAX_CNT);
+        &mut self.positions[position_idx].spot
+    }
+
+    /// gets the derivative positions
+    pub fn get_derivative_positions(&self) -> Vec<DerivativePosition> {
+        self.positions
+            .iter()
+            .filter(|p| p.derivative.market != Pubkey::default())
+            .map(|p| p.derivative)
+            .collect()
     }
 
     /// gets the derivative position at the given index
@@ -659,17 +683,23 @@ impl CypherSubAccount {
         &self.positions[position_idx].derivative
     }
 
+    /// gets the derivative position at the given index
+    pub fn get_derivative_position_mut(&mut self, position_idx: usize) -> &mut DerivativePosition {
+        assert!(position_idx < TOKENS_MAX_CNT);
+        &mut self.positions[position_idx].derivative
+    }
+
     /// gets the c-ratio for this sub account
     pub fn get_margin_c_ratio(
         &self,
         cache_account: &CacheAccount,
         mcr_type: MarginCollateralRatioType,
     ) -> I80F48 {
-        let liabs_value = self.get_liabilities_value(cache_account, mcr_type);
+        let (liabs_value, _) = self.get_liabilities_value(cache_account, mcr_type);
         if liabs_value == I80F48::ZERO {
             I80F48::MAX
         } else {
-            let assets_value = self.get_assets_value(cache_account, mcr_type);
+            let (assets_value, _) = self.get_assets_value(cache_account, mcr_type);
             assets_value.saturating_div(liabs_value)
         }
     }
@@ -680,8 +710,8 @@ impl CypherSubAccount {
         cache_account: &CacheAccount,
         mcr_type: MarginCollateralRatioType,
     ) -> (I80F48, I80F48, I80F48) {
-        let liabilities_value = self.get_liabilities_value(cache_account, mcr_type);
-        let assets_value = self.get_assets_value(cache_account, mcr_type);
+        let (liabilities_value, _) = self.get_liabilities_value(cache_account, mcr_type);
+        let (assets_value, _) = self.get_assets_value(cache_account, mcr_type);
 
         if liabilities_value == I80F48::ZERO {
             (I80F48::MAX, assets_value, I80F48::ZERO)
@@ -699,8 +729,9 @@ impl CypherSubAccount {
         &self,
         cache_account: &CacheAccount,
         mcr_type: MarginCollateralRatioType,
-    ) -> I80F48 {
+    ) -> (I80F48, I80F48) {
         let mut assets_value = I80F48::ZERO;
+        let mut assets_value_unweighted = I80F48::ZERO;
         let mut cum_pc_total: u64 = 0;
 
         for position in self.positions.iter() {
@@ -720,11 +751,13 @@ impl CypherSubAccount {
                     let spot_position_size = spot_position
                         .checked_add(I80F48::from(position.spot.open_orders_cache.coin_total))
                         .unwrap();
-                    let spot_value = adjust_decimals(spot_position_size, cache.decimals)
+                    let spot_value_unweighted = adjust_decimals(spot_position_size, cache.decimals)
                         .checked_mul(spot_oracle_price)
-                        .and_then(|n| n.checked_mul(spot_asset_weight))
                         .unwrap();
-                    assets_value += spot_value;
+                    assets_value_unweighted += spot_value_unweighted;
+                    assets_value += spot_value_unweighted
+                        .checked_mul(spot_asset_weight)
+                        .unwrap();
                 }
                 cum_pc_total += position.spot.open_orders_cache.pc_total;
             }
@@ -785,11 +818,14 @@ impl CypherSubAccount {
                             position.derivative.open_orders_cache.coin_total,
                         ))
                         .unwrap();
-                    let derivative_value = adjust_decimals(derivative_position_size, decimals)
-                        .checked_mul(derivative_price)
-                        .and_then(|n| n.checked_mul(derivative_asset_weight))
+                    let derivative_value_unweighted =
+                        adjust_decimals(derivative_position_size, decimals)
+                            .checked_mul(derivative_price)
+                            .unwrap();
+                    assets_value_unweighted += derivative_value_unweighted;
+                    assets_value += derivative_value_unweighted
+                        .checked_mul(derivative_asset_weight)
                         .unwrap();
-                    assets_value += derivative_value;
                 }
                 // we are going to take derivative coins locked and will price them at the oracle price
                 // regardless of whatever price the limit ask orders are actually placed at
@@ -797,12 +833,14 @@ impl CypherSubAccount {
                 // if they weren't, we would run into a risk of a user spamming limit asks without them affecting the c-ratio
                 let derivative_coin_locked = position.derivative.open_orders_cache.coin_locked();
                 if derivative_coin_locked != 0 {
-                    let coin_locked_value =
+                    let coin_locked_value_unweighted =
                         adjust_decimals(I80F48::from(derivative_coin_locked), decimals)
                             .checked_mul(derivative_price)
-                            .and_then(|n| n.checked_mul(derivative_asset_weight))
                             .unwrap();
-                    assets_value += coin_locked_value;
+                    assets_value_unweighted += coin_locked_value_unweighted;
+                    assets_value += coin_locked_value_unweighted
+                        .checked_mul(derivative_asset_weight)
+                        .unwrap();
                 }
                 cum_pc_total += position.derivative.open_orders_cache.pc_total;
             }
@@ -810,12 +848,18 @@ impl CypherSubAccount {
 
         let quote_position = self.positions[QUOTE_TOKEN_IDX].spot;
         let quote_cache = cache_account.get_price_cache(quote_position.cache_index as usize);
-
-        assets_value += adjust_decimals(I80F48::from(cum_pc_total), quote_cache.decimals)
+        let cum_pc_total_value = adjust_decimals(I80F48::from(cum_pc_total), quote_cache.decimals)
             .checked_mul(I80F48::from_bits(quote_cache.oracle_price))
             .unwrap();
 
-        assets_value
+        let quote_asset_weight = match mcr_type {
+            MarginCollateralRatioType::Initialization => quote_cache.spot_init_asset_weight(),
+            MarginCollateralRatioType::Maintenance => quote_cache.spot_maint_asset_weight(),
+        };
+        assets_value_unweighted += cum_pc_total_value;
+        assets_value += cum_pc_total_value.checked_mul(quote_asset_weight).unwrap();
+
+        (assets_value, assets_value_unweighted)
     }
 
     /// gets the liabilities value of this sub account
@@ -823,8 +867,9 @@ impl CypherSubAccount {
         &self,
         cache_account: &CacheAccount,
         mcr_type: MarginCollateralRatioType,
-    ) -> I80F48 {
+    ) -> (I80F48, I80F48) {
         let mut liabilities_value = I80F48::ZERO;
+        let mut liabilities_value_unweighted = I80F48::ZERO;
 
         for position in self.positions.iter() {
             // spot
@@ -841,12 +886,14 @@ impl CypherSubAccount {
                 // get total spot position value according to index
                 let spot_position = position.spot.total_position(cache);
                 if spot_position.is_negative() {
-                    let spot_value = adjust_decimals(spot_position, cache.decimals)
+                    let spot_value_unweighted = adjust_decimals(spot_position, cache.decimals)
                         .abs()
                         .checked_mul(spot_oracle_price)
-                        .and_then(|n| n.checked_mul(spot_liability_weight))
                         .unwrap();
-                    liabilities_value += spot_value
+                    liabilities_value_unweighted += spot_value_unweighted;
+                    liabilities_value += spot_value_unweighted
+                        .checked_mul(spot_liability_weight)
+                        .unwrap();
                 }
             }
             // derivatives
@@ -902,17 +949,21 @@ impl CypherSubAccount {
                 };
                 let derivative_position = position.derivative.base_position();
                 if derivative_position.is_negative() {
-                    let derivative_value = adjust_decimals(derivative_position, decimals)
-                        .abs()
-                        .checked_mul(derivative_price)
-                        .and_then(|n| n.checked_mul(derivative_liability_weight))
+                    let derivative_value_unweighted =
+                        adjust_decimals(derivative_position, decimals)
+                            .abs()
+                            .checked_mul(derivative_price)
+                            .and_then(|n| n.checked_mul(derivative_liability_weight))
+                            .unwrap();
+                    liabilities_value_unweighted += derivative_value_unweighted;
+                    liabilities_value += derivative_value_unweighted
+                        .checked_mul(derivative_liability_weight)
                         .unwrap();
-                    liabilities_value += derivative_value;
                 }
             }
         }
 
-        liabilities_value
+        (liabilities_value, liabilities_value_unweighted)
     }
 
     pub fn is_bankrupt(&self, clearing: &Clearing, cache_account: &CacheAccount) -> Result<bool> {

@@ -8,33 +8,58 @@ use anchor_spl::token;
 
 use crate::{
     accounts::{
-        CacheOraclePrices, CancelFuturesOrder, CancelFuturesOrders, CancelPerpOrder,
-        CancelPerpOrders, CancelSpotOrder, CancelSpotOrderDex, ClaimIdoProceeds, CloseAccount,
-        CloseCacheAccount, CloseClearing, CloseFuturesMarket, CloseOracleProducts, ClosePerpMarket,
-        ClosePool, ClosePoolNode, CloseSpotOpenOrders, CloseSubAccount, ConsumeFuturesEvents,
-        ConsumePerpEvents, CreateAccount, CreateFuturesMarket, CreateOracleProducts,
-        CreateOracleStub, CreateOrdersAccount, CreatePerpMarket, CreatePool, CreatePoolNode,
-        CreatePrivateClearing, CreatePublicClearing, CreateSubAccount, CreateWhitelist,
-        CreateWhitelistedAccount, DepositDeliverable, DepositFunds, InitCacheAccount,
-        InitSpotOpenOrders, LiquidateFuturesPosition, LiquidatePerpPosition, LiquidateSpotPosition,
-        MultipleNewFuturesOrders, MultipleNewPerpOrders, NewFuturesOrder, NewPerpOrder,
-        NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate, SetCacheAuthority,
-        SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers, SetFuturesMarketAuthority,
-        SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams, SetFuturesMarketStatus,
-        SetOracleProducts, SetOracleProductsV2, SetOracleStubPrice, SetPerpetualMarketAuthority,
-        SetPerpetualMarketLiquidityMiningInfo, SetPerpetualMarketParams, SetPerpetualMarketStatus,
-        SetPoolAuthority, SetPoolDexMarket, SetPoolNodeAuthority, SetPoolNodeStatus, SetPoolParams,
-        SetPoolStatus, SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds,
-        SettlePosition, SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex,
-        SweepMarketFees, SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin,
-        UpdateFundingRate, UpdateMarketExpiration, UpdateTokenIndex, UpgradeOracleProducts,
-        WithdrawFunds,
+        AuthorityWithdraw, CacheOraclePrices, CancelFuturesOrder, CancelFuturesOrders,
+        CancelPerpOrder, CancelPerpOrders, CancelSpotOrder, CancelSpotOrderDex, ClaimIdoProceeds,
+        CloseAccount, CloseCacheAccount, CloseClearing, CloseFuturesMarket, CloseOracleProducts,
+        ClosePerpMarket, ClosePool, ClosePoolNode, CloseSpotOpenOrders, CloseSubAccount,
+        ConsumeFuturesEvents, ConsumePerpEvents, CreateAccount, CreateFuturesMarket,
+        CreateOracleProducts, CreateOracleStub, CreateOrdersAccount, CreatePerpMarket, CreatePool,
+        CreatePoolNode, CreatePrivateClearing, CreatePublicClearing, CreateSubAccount,
+        CreateWhitelist, CreateWhitelistedAccount, DepositDeliverable, DepositFunds,
+        InitCacheAccount, InitSpotOpenOrders, LiquidateFuturesPosition, LiquidatePerpPosition,
+        LiquidateSpotPosition, MultipleNewFuturesOrders, MultipleNewPerpOrders, NewFuturesOrder,
+        NewPerpOrder, NewSpotOrder, NewSpotOrderDex, RollMarketExpiry, SetAccountDelegate,
+        SetCacheAuthority, SetClearingAuthority, SetClearingFeeMint, SetClearingFeeTiers,
+        SetFuturesMarketAuthority, SetFuturesMarketLiquidityMiningInfo, SetFuturesMarketParams,
+        SetFuturesMarketStatus, SetOracleProducts, SetOracleProductsV2, SetOracleStubPrice,
+        SetPerpetualMarketAuthority, SetPerpetualMarketLiquidityMiningInfo,
+        SetPerpetualMarketParams, SetPerpetualMarketStatus, SetPoolAuthority, SetPoolDexMarket,
+        SetPoolNodeAuthority, SetPoolNodeStatus, SetPoolParams, SetPoolStatus,
+        SetSubAccountDelegate, SettleFunding, SettleFuturesFunds, SettlePerpFunds, SettlePosition,
+        SettlePositionWithDelivery, SettleSpotFunds, SettleSpotFundsDex, SweepMarketFees,
+        SweepPoolFees, TransferBetweenSubAccounts, UpdateAccountMargin, UpdateFundingRate,
+        UpdateMarketExpiration, UpdateTokenIndex, UpgradeOracleProducts, WithdrawFunds,
     },
     constants::SUB_ACCOUNT_ALIAS_LEN,
     dex, quote_mint, CancelOrderArgs, CreateClearingArgs, CreateFuturesMarketArgs,
     CreateOracleProductsArgs, CreatePerpetualMarketArgs, CreatePoolArgs, FeeTierArgs,
     LiquidityMiningArgs, NewDerivativeOrderArgs, NewSpotOrderArgs, OperatingStatus, ProductsType,
 };
+
+pub fn authority_withdraw(
+    token_pool: &Pubkey,
+    token_pool_node: &Pubkey,
+    token_vault: &Pubkey,
+    destination_token_account: &Pubkey,
+    vault_signer: &Pubkey,
+    authority: &Pubkey,
+) -> Instruction {
+    let accounts = AuthorityWithdraw {
+        token_pool: *token_pool,
+        token_pool_node: *token_pool_node,
+        token_vault: *token_vault,
+        destination_token_account: *destination_token_account,
+        vault_signer: *vault_signer,
+        authority: *authority,
+        token_program: token::ID,
+    };
+    let ix_data = crate::instruction::AuthorityWithdraw {};
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts.to_account_metas(None),
+        data: ix_data.data(),
+    }
+}
 
 pub fn create_public_clearing(
     clearing: &Pubkey,

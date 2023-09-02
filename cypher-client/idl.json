@@ -1,7 +1,48 @@
 {
-  "version": "3.0.7",
+  "version": "3.0.8",
   "name": "cypher",
   "instructions": [
+    {
+      "name": "authorityWithdraw",
+      "accounts": [
+        {
+          "name": "tokenPool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenPoolNode",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "destinationTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
     {
       "name": "cacheOraclePrices",
       "accounts": [
@@ -1193,6 +1234,16 @@
     {
       "name": "editSubAccountMargining",
       "accounts": [
+        {
+          "name": "clearing",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "cacheAccount",
+          "isMut": false,
+          "isSigner": false
+        },
         {
           "name": "masterAccount",
           "isMut": true,
@@ -8321,6 +8372,36 @@
       ]
     },
     {
+      "name": "TransferBetweenSubAccountsLog",
+      "fields": [
+        {
+          "name": "masterAccount",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "fromSubAccount",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "toSubAccount",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "assetMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "amount",
+          "type": "u64",
+          "index": false
+        }
+      ]
+    },
+    {
       "name": "OrderFillLog",
       "fields": [
         {
@@ -8841,6 +8922,11 @@
     },
     {
       "code": 6090,
+      "name": "WouldExceedBorrowLimit",
+      "msg": "this operation would exceed borrow limits"
+    },
+    {
+      "code": 6091,
       "name": "Default",
       "msg": "Default"
     }

@@ -63,4 +63,5 @@ jobs:
       - name: Cargo fmt
         run: cargo fmt -- --check
       - name: Cargo clippy
-        run: cargo clippy --all-targets -- --deny=warnings
+        # run: cargo clippy --all-targets -- --deny=warnings
+        run: cargo clippy --all-targets -- -Dwarnings

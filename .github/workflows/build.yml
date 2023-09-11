@@ -16,8 +16,8 @@ defaults:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_TOOLCHAIN: nightly-2022-04-25
-
+  RUST_TOOLCHAIN: nightly-2023-08-23        #2022-04-25
+  
 jobs:
   cargo-audit:
     name: cargo audit

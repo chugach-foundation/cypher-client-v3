@@ -1,3 +1,4 @@
+#CICD
 name: Cargo-audit, lint and test
 
 on:

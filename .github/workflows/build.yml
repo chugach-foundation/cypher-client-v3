@@ -19,23 +19,23 @@ env:
   RUST_TOOLCHAIN: nightly-2022-04-25
 
 jobs:
-  # cargo-audit:
-  #   name: cargo audit
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Cache cargo-audit version
-  #       uses: Swatinem/rust-cache@v1
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache cargo-audit version
+        uses: Swatinem/rust-cache@v1
 
-  #     - name: Download cargo-audit
-  #       uses: actions-rs/install@v0.1
-  #       with:
-  #         crate: cargo-audit
-  #         version: latest
+      - name: Download cargo-audit
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-audit
+          version: latest
 
-  #     - name: Run cargo-audit # Using args from .cargo/audit.toml
-  #       # run: cargo audit
-  #       run: cargo test --all-features --workspace
+      - name: Run cargo-audit # Using args from .cargo/audit.toml
+        # run: cargo audit
+        run: cargo test --all-features --workspace
 
 
   lint-test:

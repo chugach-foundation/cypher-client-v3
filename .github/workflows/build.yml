@@ -35,7 +35,8 @@ jobs:
 
       - name: Run cargo-audit # Using args from .cargo/audit.toml
         # run: cargo audit
-        run: cargo install cargo-audit --features=fix
+        # run: cargo install cargo-audit --features=fix
+        run: cargo test --all-features --workspace
 
 
   # lint-test:

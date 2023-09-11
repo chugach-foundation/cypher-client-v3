@@ -36,8 +36,6 @@ jobs:
       - name: Run cargo-audit # Using args from .cargo/audit.toml
         # run: cargo audit
         uses: simonhyll/cargo-audit@v1
-        with:
-          path: "./"
 
   # lint-test:
   #   name: lint & test

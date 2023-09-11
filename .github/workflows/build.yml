@@ -34,7 +34,8 @@ jobs:
           version: latest
 
       - name: Run cargo-audit # Using args from .cargo/audit.toml
-        run: cargo audit fix --dry-run
+        # run: cargo audit
+        run: cargo install cargo-audit --features=fix
 
 
   # lint-test:

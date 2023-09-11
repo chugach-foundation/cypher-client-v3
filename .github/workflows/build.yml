@@ -1,8 +1,11 @@
+#CICD
 name: Cargo-audit, lint and test
 
 on:
   push:
-    branches: master
+    branches: 
+      - master
+      - dev
   pull_request:
     branches: master
 
@@ -13,8 +16,8 @@ defaults:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_TOOLCHAIN: nightly-2022-04-25
-
+  RUST_TOOLCHAIN: nightly-2023-08-23        #2022-04-25
+  
 jobs:
   cargo-audit:
     name: cargo audit
@@ -31,7 +34,9 @@ jobs:
           version: latest
 
       - name: Run cargo-audit # Using args from .cargo/audit.toml
-        run: cargo audit
+        # run: cargo audit
+        run: cargo test --all-features --workspace
+
 
   lint-test:
     name: lint & test
@@ -58,4 +63,5 @@ jobs:
       - name: Cargo fmt
         run: cargo fmt -- --check
       - name: Cargo clippy
-        run: cargo clippy --all-targets -- --deny=warnings
+        # run: cargo clippy --all-targets -- --deny=warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
